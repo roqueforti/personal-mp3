@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useAudio } from '@/context/AudioContext';
-import { Play, Pause, SkipForward, SkipBack, Heart, Music, Maximize2 } from 'lucide-react';
+import { Play, Pause, SkipForward, Heart, Music } from 'lucide-react';
 
 export default function MiniPlayer() {
   const {
@@ -12,7 +12,6 @@ export default function MiniPlayer() {
     duration,
     togglePlay,
     playNext,
-    playPrevious,
     toggleFavorite,
     setIsFullPlayerOpen,
   } = useAudio();
@@ -22,23 +21,23 @@ export default function MiniPlayer() {
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 shadow-2xl safe-area-bottom">
-      {/* Top Progress Bar */}
-      <div className="w-full h-1 bg-slate-100 relative overflow-hidden">
+    <div className="fixed bottom-16 left-3 right-3 max-w-md mx-auto z-40 bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-3xl shadow-xl overflow-hidden animate-slide-up select-none">
+      {/* Top Progress Line */}
+      <div className="w-full h-0.5 bg-slate-100 relative overflow-hidden">
         <div
           className="h-full bg-slate-900 transition-all duration-150 ease-out"
           style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
         />
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-2.5 flex items-center justify-between gap-3">
+      <div className="px-3.5 py-2 flex items-center justify-between gap-3">
         {/* Left Section: Track Info */}
         <div
-          className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer select-none"
+          className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer"
           onClick={() => setIsFullPlayerOpen(true)}
         >
           {/* Mini Album Art */}
-          <div className="w-12 h-12 rounded-2xl bg-slate-100 overflow-hidden border border-slate-200 flex-shrink-0 flex items-center justify-center shadow-sm">
+          <div className="w-11 h-11 rounded-2xl bg-slate-100 overflow-hidden border border-slate-200 flex-shrink-0 flex items-center justify-center shadow-xs">
             {currentSong.coverArt ? (
               <img
                 src={currentSong.coverArt}
@@ -51,57 +50,43 @@ export default function MiniPlayer() {
           </div>
 
           {/* Title & Artist */}
-          <div className="min-w-0 flex-1">
-            <h4 className="text-sm font-bold text-slate-900 truncate leading-tight">
+          <div className="min-w-0 flex-1 pr-1">
+            <h4 className="text-xs font-extrabold text-slate-900 truncate leading-tight">
               {currentSong.title}
             </h4>
-            <p className="text-xs text-slate-500 font-medium truncate mt-0.5">{currentSong.artist}</p>
+            <p className="text-[11px] text-slate-400 font-medium truncate mt-0.5">{currentSong.artist}</p>
           </div>
         </div>
 
         {/* Right Section: Controls */}
-        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+        <div className="flex items-center gap-1 flex-shrink-0">
           {/* Favorite */}
           <button
             onClick={(e) => {
               e.stopPropagation();
               toggleFavorite(currentSong.id);
             }}
-            title="Favorit"
-            className="p-2 rounded-full text-slate-800 hover:bg-slate-100 transition-colors"
+            className="p-2 rounded-full text-slate-600 hover:text-slate-900 transition-colors"
           >
             <Heart
-              className={`w-5 h-5 ${
-                currentSong.favorite ? 'fill-slate-900 text-slate-900' : 'text-slate-700'
+              className={`w-4 h-4 ${
+                currentSong.favorite ? 'fill-slate-900 text-slate-900' : 'text-slate-500'
               }`}
             />
           </button>
 
-          {/* Previous (Desktop) */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              playPrevious();
-            }}
-            title="Sebelumnya"
-            className="p-2 rounded-full text-slate-800 hover:bg-slate-100 transition-colors hidden sm:inline-flex"
-          >
-            <SkipBack className="w-5 h-5 fill-slate-800" />
-          </button>
-
-          {/* Solid Black Play / Pause */}
+          {/* Solid Black Play / Pause Circle */}
           <button
             onClick={(e) => {
               e.stopPropagation();
               togglePlay();
             }}
-            title={isPlaying ? 'Jeda' : 'Putar'}
-            className="w-11 h-11 rounded-full bg-slate-900 text-white flex items-center justify-center shadow-md active:scale-95 transition-transform"
+            className="w-9 h-9 rounded-full bg-slate-900 text-white flex items-center justify-center shadow-sm active:scale-95 transition-transform"
           >
             {isPlaying ? (
-              <Pause className="w-5 h-5 fill-white" />
+              <Pause className="w-4 h-4 fill-white" />
             ) : (
-              <Play className="w-5 h-5 fill-white ml-0.5" />
+              <Play className="w-4 h-4 fill-white ml-0.5" />
             )}
           </button>
 
@@ -111,10 +96,9 @@ export default function MiniPlayer() {
               e.stopPropagation();
               playNext();
             }}
-            title="Berikutnya"
-            className="p-2 rounded-full text-slate-800 hover:bg-slate-100 transition-colors"
+            className="p-2 rounded-full text-slate-600 hover:text-slate-900 transition-colors"
           >
-            <SkipForward className="w-5 h-5 fill-slate-800" />
+            <SkipForward className="w-4 h-4 fill-slate-700" />
           </button>
         </div>
       </div>

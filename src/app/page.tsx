@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import SongList from '@/components/SongList';
 import MiniPlayer from '@/components/MiniPlayer';
@@ -12,11 +12,27 @@ import PlaylistModal from '@/components/PlaylistModal';
 import CloudSettingsModal from '@/components/CloudSettingsModal';
 import PWAInstallBanner from '@/components/PWAInstallBanner';
 import PWAUpdateToast from '@/components/PWAUpdateToast';
+import BottomNav from '@/components/BottomNav';
+import { useAudio } from '@/context/AudioContext';
 
 export default function HomePage() {
+  const [currentTab, setCurrentTab] = useState<'home' | 'search' | 'library' | 'cloud'>('home');
+  const { setIsPlaylistModalOpen, setIsCloudModalOpen, setSearchQuery } = useAudio();
+
+  const handleTabChange = (tab: 'home' | 'search' | 'library' | 'cloud') => {
+    setCurrentTab(tab);
+    if (tab === 'library') {
+      setIsPlaylistModalOpen(true);
+    } else if (tab === 'cloud') {
+      setIsCloudModalOpen(true);
+    } else if (tab === 'home') {
+      setSearchQuery('');
+    }
+  };
+
   return (
-    <main className="min-h-screen bg-background text-slate-900 flex flex-col relative selection:bg-slate-900 selection:text-white">
-      {/* Top Navigation */}
+    <main className="min-h-screen bg-background text-slate-900 flex flex-col relative selection:bg-slate-900 selection:text-white max-w-lg mx-auto bg-white border-x border-slate-100 shadow-xs">
+      {/* Top Native Mobile Header */}
       <Navbar />
 
       {/* PWA Mobile Install Banner */}
@@ -25,13 +41,16 @@ export default function HomePage() {
       {/* PWA Auto Update Notification Toast */}
       <PWAUpdateToast />
 
-      {/* Main Track List Container */}
-      <section className="flex-1 w-full">
-        <SongList />
+      {/* Main Content Area */}
+      <section className="flex-1 w-full overflow-x-hidden">
+        <SongList currentTab={currentTab} />
       </section>
 
-      {/* Sticky Bottom Mini Player */}
+      {/* Floating Mini Player (Above Bottom Nav) */}
       <MiniPlayer />
+
+      {/* Native Bottom Navigation Bar */}
+      <BottomNav currentTab={currentTab} setCurrentTab={handleTabChange} />
 
       {/* Modals & Full Player */}
       <NowPlayingModal />

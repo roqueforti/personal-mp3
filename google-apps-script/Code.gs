@@ -1,17 +1,5 @@
 /**
  * 🎵 SonicVault - Google Apps Script Backend (Database & Google Drive Storage)
- * 
- * CARA PAKAI:
- * 1. Buka https://script.google.com/ lalu klik "New Project".
- * 2. Hapus semua kode yang ada, lalu Paste seluruh isi file ini.
- * 3. Klik tombol "Deploy" (di kanan atas) -> "New deployment".
- * 4. Pilih icon Gear ⚙️ -> "Web app".
- * 5. Set:
- *    - Description: "SonicVault Backend"
- *    - Execute as: "Me" (email Google Anda)
- *    - Who has access: "Anyone" (Siapa saja)
- * 6. Klik "Deploy" dan Berikan izin akses (Authorize access).
- * 7. Copy "Web App URL" (berakhiran /exec) dan paste ke pengaturan SonicVault di aplikasi.
  */
 
 const FOLDER_NAME = 'SonicVault Music';
@@ -22,7 +10,9 @@ function getOrCreateFolder() {
   if (folders.hasNext()) {
     return folders.next();
   }
-  return DriveApp.createFolder(FOLDER_NAME);
+  const folder = DriveApp.createFolder(FOLDER_NAME);
+  folder.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  return folder;
 }
 
 function getOrCreateSheet() {
@@ -61,14 +51,14 @@ function doGet(e) {
       const data = sheet.getDataRange().getValues();
       const songs = [];
       
-      // Skip header row
       for (let i = 1; i < data.length; i++) {
         const row = data[i];
         if (!row[0]) continue;
         
-        const driveFileId = row[6];
-        // Generate direct streaming URL from Google Drive
-        const streamUrl = 'https://docs.google.com/uc?export=download&id=' + driveFileId;
+        const driveFileId = String(row[6] || '');
+        const streamUrl = driveFileId
+          ? 'https://drive.google.com/uc?export=download&id=' + driveFileId
+          : '';
 
         songs.push({
           id: String(row[0]),
@@ -77,7 +67,7 @@ function doGet(e) {
           album: String(row[3] || 'SonicVault'),
           duration: Number(row[4]) || 0,
           fileSize: Number(row[5]) || 0,
-          driveFileId: String(driveFileId),
+          driveFileId: driveFileId,
           streamUrl: streamUrl,
           coverArt: String(row[7] || ''),
           favorite: Boolean(row[8]),
@@ -153,16 +143,14 @@ function doPost(e) {
     // 1. Upload Song File & Metadata
     if (action === 'uploadSong') {
       const folder = getOrCreateFolder();
-      const base64Data = payload.base64Data; // data:[<mediatype>];base64,<data>
+      const base64Data = payload.base64Data || '';
       const filename = payload.filename || (payload.title + '.mp3');
       const mimeType = payload.mimeType || 'audio/mpeg';
 
-      // Clean base64 header if present
       const rawBase64 = base64Data.replace(/^data:[^;]+;base64,/, '');
       const decodedBytes = Utilities.base64Decode(rawBase64);
       const blob = Utilities.newBlob(decodedBytes, mimeType, filename);
       
-      // Create file in Drive folder
       const file = folder.createFile(blob);
       file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
 
@@ -170,7 +158,6 @@ function doPost(e) {
       const songId = payload.id || ('song_' + Date.now());
       const coverArt = payload.coverArt || '';
 
-      // Save row to Sheets
       const sheet = ss.getSheetByName('Songs');
       sheet.appendRow([
         songId,
@@ -181,12 +168,12 @@ function doPost(e) {
         Number(payload.fileSize) || decodedBytes.length,
         fileId,
         coverArt,
-        false, // favorite
-        0,     // playCount
+        false,
+        0,
         Date.now()
       ]);
 
-      const streamUrl = 'https://docs.google.com/uc?export=download&id=' + fileId;
+      const streamUrl = 'https://drive.google.com/uc?export=download&id=' + fileId;
 
       return createJsonResponse({
         status: 'success',

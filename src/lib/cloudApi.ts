@@ -29,6 +29,17 @@ export function fileToBase64(file: Blob): Promise<string> {
   });
 }
 
+// Convert base64 data to Blob
+export function base64ToBlob(base64: string, mimeType = 'audio/mpeg'): Blob {
+  const cleanBase64 = base64.replace(/^data:[^;]+;base64,/, '');
+  const byteCharacters = atob(cleanBase64);
+  const byteNumbers = new Uint8Array(byteCharacters.length);
+  for (let i = 0; i < byteCharacters.length; i++) {
+    byteNumbers[i] = byteCharacters.charCodeAt(i);
+  }
+  return new Blob([byteNumbers], { type: mimeType });
+}
+
 // ----------------- Cloud Endpoints ----------------- //
 
 export async function pingCloud(url?: string): Promise<{ success: boolean; message: string }> {
@@ -83,22 +94,46 @@ export async function fetchCloudPlaylists(): Promise<Playlist[]> {
 
 export async function fetchSongAudioBlob(driveFileId: string): Promise<Blob | null> {
   const endpoint = getAppScriptUrl();
-  if (!endpoint || !driveFileId) return null;
+  if (!driveFileId) return null;
 
-  try {
-    const res = await fetch(`${endpoint}?action=getAudio&fileId=${driveFileId}`, { method: 'GET' });
-    const data = await res.json();
-    if (data.status === 'success' && data.base64) {
-      const byteCharacters = atob(data.base64);
-      const byteNumbers = new Uint8Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
+  // 1. Primary: Fetch through Google Apps Script endpoint
+  if (endpoint) {
+    try {
+      const res = await fetch(`${endpoint}?action=getAudio&fileId=${driveFileId}`, { method: 'GET' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.status === 'success' && data.base64) {
+          const blob = base64ToBlob(data.base64, data.mimeType || 'audio/mpeg');
+          if (blob.size > 1000) {
+            return blob;
+          }
+        }
       }
-      return new Blob([byteNumbers], { type: data.mimeType || 'audio/mpeg' });
+    } catch (err) {
+      console.warn('Apps Script getAudio fetch failed, trying direct Google Drive links...', err);
     }
-  } catch (err) {
-    console.error('Error fetching audio blob from Google Apps Script:', err);
   }
+
+  // 2. Secondary: Try direct public Google Drive URLs
+  const directUrls = [
+    `https://drive.google.com/uc?export=download&id=${driveFileId}`,
+    `https://docs.google.com/uc?export=download&id=${driveFileId}`,
+    `https://lh3.googleusercontent.com/d/${driveFileId}`
+  ];
+
+  for (const dUrl of directUrls) {
+    try {
+      const res = await fetch(dUrl);
+      if (res.ok) {
+        const blob = await res.blob();
+        // Ensure it's not a small HTML error page
+        if (blob && blob.size > 5000) {
+          return blob;
+        }
+      }
+    } catch {}
+  }
+
   return null;
 }
 
