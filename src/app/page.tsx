@@ -11,6 +11,7 @@ import SleepTimerModal from '@/components/SleepTimerModal';
 import PlaylistModal from '@/components/PlaylistModal';
 import CloudSettingsModal from '@/components/CloudSettingsModal';
 import PWAInstallBanner from '@/components/PWAInstallBanner';
+import PWAUpdateToast from '@/components/PWAUpdateToast';
 
 export default function HomePage() {
   return (
@@ -20,6 +21,9 @@ export default function HomePage() {
 
       {/* PWA Mobile Install Banner */}
       <PWAInstallBanner />
+
+      {/* PWA Auto Update Notification Toast */}
+      <PWAUpdateToast />
 
       {/* Main Track List Container */}
       <section className="flex-1 w-full">

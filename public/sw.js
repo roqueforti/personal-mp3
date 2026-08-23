@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sonicvault-v2-offline-first';
+const CACHE_NAME = 'sonicvault-v3-release';
 
 const CORE_ASSETS = [
   '/',
@@ -21,26 +21,36 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Clean older cache versions on activation
+// Purge any older cache versions automatically on activation
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
         keys
           .filter((k) => k !== CACHE_NAME)
-          .map((k) => caches.delete(k))
+          .map((k) => {
+            console.log('Purging outdated cache version:', k);
+            return caches.delete(k);
+          })
       );
     })
   );
   self.clients.claim();
 });
 
-// Offline-First Fetch Strategy
+// Support manual or instant skipWaiting command from client
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
+// Offline-First + Auto Revalidation Fetch Strategy
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Ignore non-GET requests and internal blob / data URLs
+  // Ignore non-GET, blob:, data:, chrome-extension:
   if (
     request.method !== 'GET' ||
     url.protocol.startsWith('blob:') ||
@@ -50,14 +60,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 1. Next.js immutable static assets (_next/static/*) -> 100% CACHE FIRST FOREVER
-  // Since Next.js uses content hashing, once downloaded it never needs to be re-downloaded!
+  // 1. Next.js content-hashed static assets (_next/static/*)
+  // Immutable cache: once cached, serve instantly.
   if (url.pathname.startsWith('/_next/static/') || url.pathname.startsWith('/icons/')) {
     event.respondWith(
       caches.match(request).then((cached) => {
-        if (cached) {
-          return cached;
-        }
+        if (cached) return cached;
         return fetch(request).then((networkResponse) => {
           if (networkResponse && networkResponse.status === 200) {
             const copy = networkResponse.clone();
@@ -70,33 +78,43 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 2. Navigation / App Shell HTML -> CACHE FIRST with background revalidation
-  // Loads instantly from local storage without downloading again if no update
+  // 2. Navigation / App Shell HTML
+  // Stale-While-Revalidate with deployment update detection
   event.respondWith(
-    caches.match(request).then((cached) => {
+    caches.match(request).then((cachedResponse) => {
       const fetchPromise = fetch(request)
         .then((networkResponse) => {
           if (networkResponse && networkResponse.status === 200) {
             const copy = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, copy);
+            });
+
+            // If we had a cached response and the ETag / content changed, notify client
+            if (cachedResponse) {
+              const oldEtag = cachedResponse.headers.get('ETag');
+              const newEtag = networkResponse.headers.get('ETag');
+              if (oldEtag && newEtag && oldEtag !== newEtag) {
+                self.clients.matchAll().then((clients) => {
+                  clients.forEach((client) => {
+                    client.postMessage({ type: 'DEPLOYMENT_UPDATED' });
+                  });
+                });
+              }
+            }
           }
           return networkResponse;
         })
         .catch(() => {
-          // If offline and request is a navigation, fallback to cached root '/'
+          // If offline and requesting navigation, return cached root
           if (request.mode === 'navigate') {
             return caches.match('/');
           }
-          return cached;
+          return cachedResponse || new Response('Offline', { status: 503 });
         });
 
-      // If we already have it in local cache, return immediately (0ms delay, 0 data usage)
-      if (cached) {
-        return cached;
-      }
-
-      // Otherwise wait for network response and cache it
-      return fetchPromise;
+      // Return cached version immediately for 0ms startup, revalidate in background
+      return cachedResponse || fetchPromise;
     })
   );
 });
