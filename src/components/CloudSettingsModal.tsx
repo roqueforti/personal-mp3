@@ -16,6 +16,8 @@ import {
   HelpCircle,
   Database,
   UploadCloud,
+  DownloadCloud,
+  Download,
   Loader2,
 } from 'lucide-react';
 
@@ -27,6 +29,9 @@ export default function CloudSettingsModal() {
     syncWithCloud,
     refreshSongs,
     isSyncing,
+    downloadAllSongsForOffline,
+    isDownloadingAll,
+    downloadProgress,
   } = useAudio();
 
   const [url, setUrl] = useState('');
@@ -272,6 +277,47 @@ export default function CloudSettingsModal() {
                 >
                   <UploadCloud className="w-4 h-4" />
                   Unggah {localOnlySongs.length} Lagu ke Google Drive Sekarang
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* DOWNLOAD FOR OFFLINE SECTION (Download cloud songs to mobile memory) */}
+          {songs.filter((s) => !s.blob && s.driveFileId).length > 0 && (
+            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-3">
+              <div>
+                <h4 className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
+                  <DownloadCloud className="w-4 h-4 text-emerald-600" />
+                  <span>Unduh {songs.filter((s) => !s.blob && s.driveFileId).length} Lagu ke Memori HP</span>
+                </h4>
+                <p className="text-[11px] text-emerald-800 mt-0.5">
+                  Download semua lagu dari Google Drive ke HP agar bisa diputar 100% offline tanpa kuota.
+                </p>
+              </div>
+
+              {isDownloadingAll ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-emerald-900">
+                    <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
+                    <span className="truncate">{downloadProgress.text}</span>
+                  </div>
+                  <div className="w-full bg-emerald-200 h-2 rounded-full overflow-hidden">
+                    <div
+                      className="bg-emerald-600 h-full transition-all duration-300 rounded-full"
+                      style={{
+                        width: `${(downloadProgress.current / Math.max(1, downloadProgress.total)) * 100}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={downloadAllSongsForOffline}
+                  className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-sm"
+                >
+                  <Download className="w-4 h-4" />
+                  Unduh {songs.filter((s) => !s.blob && s.driveFileId).length} Lagu ke HP Sekarang
                 </button>
               )}
             </div>

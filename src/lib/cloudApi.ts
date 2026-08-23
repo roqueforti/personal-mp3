@@ -81,6 +81,27 @@ export async function fetchCloudPlaylists(): Promise<Playlist[]> {
   }
 }
 
+export async function fetchSongAudioBlob(driveFileId: string): Promise<Blob | null> {
+  const endpoint = getAppScriptUrl();
+  if (!endpoint || !driveFileId) return null;
+
+  try {
+    const res = await fetch(`${endpoint}?action=getAudio&fileId=${driveFileId}`, { method: 'GET' });
+    const data = await res.json();
+    if (data.status === 'success' && data.base64) {
+      const byteCharacters = atob(data.base64);
+      const byteNumbers = new Uint8Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      return new Blob([byteNumbers], { type: data.mimeType || 'audio/mpeg' });
+    }
+  } catch (err) {
+    console.error('Error fetching audio blob from Google Apps Script:', err);
+  }
+  return null;
+}
+
 export async function uploadSongToCloud(song: Song, fileBlob: Blob): Promise<Song | null> {
   const endpoint = getAppScriptUrl();
   if (!endpoint) return null;

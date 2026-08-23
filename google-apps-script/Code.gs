@@ -113,6 +113,27 @@ function doGet(e) {
       return createJsonResponse({ status: 'success', playlists: playlists });
     }
 
+    if (action === 'getAudio') {
+      const fileId = e && e.parameter && e.parameter.fileId;
+      if (!fileId) {
+        return createJsonResponse({ status: 'error', message: 'fileId is required' });
+      }
+      try {
+        const file = DriveApp.getFileById(fileId);
+        const blob = file.getBlob();
+        const bytes = blob.getBytes();
+        const base64 = Utilities.base64Encode(bytes);
+        return createJsonResponse({
+          status: 'success',
+          base64: base64,
+          mimeType: blob.getContentType() || 'audio/mpeg',
+          fileSize: bytes.length
+        });
+      } catch (err) {
+        return createJsonResponse({ status: 'error', message: 'Failed to read Drive file: ' + err.toString() });
+      }
+    }
+
     return createJsonResponse({ status: 'error', message: 'Action not found' });
   } catch (err) {
     return createJsonResponse({ status: 'error', message: err.toString() });
