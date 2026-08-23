@@ -1,0 +1,65 @@
+name: Deploy Google Apps Script (CLASP)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'google-apps-script/**'
+      - '.clasp.json'
+      - '.claspignore'
+      - '.github/workflows/deploy-appscript.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Clasp
+        run: npm install -g @google/clasp
+
+      - name: Create .clasprc.json Auth Credentials
+        run: |
+          mkdir -p ~/.clasprc.json
+          echo '${{ secrets.CLASPRC_JSON }}' > ~/.clasprc.json
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+
+      - name: Configure .clasp.json Script ID
+        run: |
+          node -e "
+            const fs = require('fs');
+            const scriptId = process.env.SCRIPT_ID || 'YOUR_SCRIPT_ID_HERE';
+            const claspConfig = {
+              scriptId: scriptId,
+              rootDir: './google-apps-script'
+            };
+            fs.writeFileSync('.clasp.json', JSON.stringify(claspConfig, null, 2));
+            console.log('Configured .clasp.json with Script ID');
+          "
+        env:
+          SCRIPT_ID: ${{ secrets.SCRIPT_ID }}
+
+      - name: Push to Google Apps Script
+        run: clasp push --force
+
+      - name: Deploy Web App Version
+        run: |
+          if [ -n "${{ secrets.DEPLOYMENT_ID }}" ]; then
+            echo "Deploying to existing Deployment ID..."
+            clasp deploy --deploymentId "${{ secrets.DEPLOYMENT_ID }}" --description "GitHub Actions CI/CD: ${{ github.sha }}"
+          else
+            echo "Creating new deployment version..."
+            clasp deploy --description "GitHub Actions CI/CD: ${{ github.sha }}"
+          fi
+        env:
+          DEPLOYMENT_ID: ${{ secrets.DEPLOYMENT_ID }}
