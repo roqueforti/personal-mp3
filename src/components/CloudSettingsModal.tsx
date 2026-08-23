@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAudio } from '@/context/AudioContext';
 import * as cloudApi from '@/lib/cloudApi';
+import * as db from '@/lib/db';
 import {
   X,
   Cloud,
@@ -14,14 +15,17 @@ import {
   RefreshCw,
   HelpCircle,
   Database,
-  Radio,
+  UploadCloud,
+  Loader2,
 } from 'lucide-react';
 
 export default function CloudSettingsModal() {
   const {
+    songs,
     isCloudModalOpen,
     setIsCloudModalOpen,
     syncWithCloud,
+    refreshSongs,
     isSyncing,
   } = useAudio();
 
@@ -31,6 +35,11 @@ export default function CloudSettingsModal() {
   const [copiedScript, setCopiedScript] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
 
+  // Migration / Bulk Upload State
+  const [isMigrating, setIsMigrating] = useState(false);
+  const [migrationProgress, setMigrationProgress] = useState({ current: 0, total: 0, text: '' });
+  const [migrationSuccess, setMigrationSuccess] = useState(false);
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setUrl(cloudApi.getAppScriptUrl());
@@ -38,6 +47,9 @@ export default function CloudSettingsModal() {
   }, [isCloudModalOpen]);
 
   if (!isCloudModalOpen) return null;
+
+  // Find local songs that haven't been uploaded to Google Drive yet
+  const localOnlySongs = songs.filter((s) => !s.driveFileId);
 
   const handleSave = async () => {
     cloudApi.setAppScriptUrl(url);
@@ -65,6 +77,62 @@ export default function CloudSettingsModal() {
     } else {
       setTestStatus('error');
       setTestMessage(result.message);
+    }
+  };
+
+  const handleMigrateLocalSongs = async () => {
+    if (!url.trim()) {
+      alert('Silakan masukkan dan simpan Web App URL Google Apps Script terlebih dahulu.');
+      return;
+    }
+
+    cloudApi.setAppScriptUrl(url.trim());
+    setIsMigrating(true);
+    setMigrationSuccess(false);
+
+    try {
+      const allDbSongs = await db.getAllSongs();
+      const songsToUpload = allDbSongs.filter((s) => !s.driveFileId);
+      const total = songsToUpload.length;
+
+      setMigrationProgress({ current: 0, total, text: `Mempersiapkan ${total} lagu...` });
+
+      for (let i = 0; i < total; i++) {
+        const song = songsToUpload[i];
+        setMigrationProgress({
+          current: i + 1,
+          total,
+          text: `Mengunggah (${i + 1}/${total}): ${song.title}...`,
+        });
+
+        let audioBlob = song.blob;
+        if (!audioBlob) {
+          const full = await db.getSongById(song.id);
+          audioBlob = full?.blob;
+        }
+
+        if (audioBlob) {
+          try {
+            const uploadedSong = await cloudApi.uploadSongToCloud(song, audioBlob);
+            if (uploadedSong) {
+              await db.saveSong({
+                ...song,
+                driveFileId: uploadedSong.driveFileId,
+                streamUrl: uploadedSong.streamUrl,
+              });
+            }
+          } catch (e) {
+            console.error('Failed to upload song to cloud:', song.title, e);
+          }
+        }
+      }
+
+      await refreshSongs();
+      setMigrationSuccess(true);
+    } catch (err: any) {
+      alert('Terjadi kesalahan saat migrasi: ' + err.message);
+    } finally {
+      setIsMigrating(false);
     }
   };
 
@@ -117,8 +185,8 @@ export default function CloudSettingsModal() {
               <span>Gratis & Tanpa Batas Penyimpanan Server</span>
             </div>
             <p className="text-xs text-slate-600 leading-relaxed font-medium">
-              Hubungkan URL Google Apps Script kamu agar lagu yang di-upload dari HP atau Laptop
-              otomatis tersimpan di <strong>Google Drive kamu</strong> dan bisa diakses dari semua perangkat.
+              Hubungkan URL Google Apps Script kamu agar lagu yang ada di HP atau Laptop
+              otomatis tersimpan di <strong>Google Drive pribadi kamu</strong> dan bisa diakses dari semua perangkat.
             </p>
           </div>
 
@@ -159,6 +227,55 @@ export default function CloudSettingsModal() {
               </div>
             )}
           </div>
+
+          {/* MIGRATION SECTION (Upload local songs to cloud) */}
+          {localOnlySongs.length > 0 && (
+            <div className="p-4 rounded-2xl bg-indigo-50 border border-indigo-200 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
+                    <UploadCloud className="w-4 h-4 text-indigo-600" />
+                    <span>Upload {localOnlySongs.length} Lagu Lokal ke Cloud</span>
+                  </h4>
+                  <p className="text-[11px] text-indigo-800 mt-0.5">
+                    Ada {localOnlySongs.length} lagu di perangkat ini yang belum tersimpan di Google Drive.
+                  </p>
+                </div>
+              </div>
+
+              {isMigrating ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-indigo-900">
+                    <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
+                    <span className="truncate">{migrationProgress.text}</span>
+                  </div>
+                  <div className="w-full bg-indigo-200 h-2 rounded-full overflow-hidden">
+                    <div
+                      className="bg-indigo-600 h-full transition-all duration-300 rounded-full"
+                      style={{
+                        width: `${(migrationProgress.current / Math.max(1, migrationProgress.total)) * 100}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              ) : migrationSuccess ? (
+                <div className="flex items-center gap-2 text-xs text-emerald-700 font-bold bg-emerald-100 p-2.5 rounded-xl">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Semua lagu berhasil di-upload ke Google Drive! Sekarang buka HP dan klik Sinkronkan.</span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleMigrateLocalSongs}
+                  disabled={!url.trim()}
+                  className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-sm"
+                >
+                  <UploadCloud className="w-4 h-4" />
+                  Unggah {localOnlySongs.length} Lagu ke Google Drive Sekarang
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Instructions Accordion */}
           <div className="border border-slate-200 rounded-2xl overflow-hidden">

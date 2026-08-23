@@ -6,6 +6,7 @@ import { Song } from '@/types/music';
 import { formatTime } from '@/lib/formatters';
 import { generateSynthwaveDemo, generateLofiDemo } from '@/lib/demoTracks';
 import * as db from '@/lib/db';
+import * as cloudApi from '@/lib/cloudApi';
 import {
   Play,
   Pause,
@@ -17,6 +18,7 @@ import {
   Disc3,
   Sparkles,
   Upload,
+  UploadCloud,
 } from 'lucide-react';
 
 export default function SongList() {
@@ -227,6 +229,39 @@ export default function SongList() {
                           <ListPlus className="w-4 h-4 text-slate-600" />
                           Tambah ke Playlist
                         </button>
+
+                        {!song.driveFileId && (
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              setMenuOpenId(null);
+                              let audioBlob = song.blob;
+                              if (!audioBlob) {
+                                const full = await db.getSongById(song.id);
+                                audioBlob = full?.blob;
+                              }
+                              if (audioBlob) {
+                                try {
+                                  const uploaded = await cloudApi.uploadSongToCloud(song, audioBlob);
+                                  if (uploaded) {
+                                    await db.saveSong({ ...song, driveFileId: uploaded.driveFileId, streamUrl: uploaded.streamUrl });
+                                    await refreshSongs();
+                                    alert(`Lagu "${song.title}" berhasil di-upload ke Google Drive!`);
+                                  } else {
+                                    alert('Pastikan URL Google Apps Script sudah diatur di menu Cloud (☁️).');
+                                  }
+                                } catch {
+                                  alert('Gagal mengunggah ke Cloud.');
+                                }
+                              }
+                            }}
+                            className="w-full px-3.5 py-2.5 text-left flex items-center gap-2.5 hover:bg-indigo-50 text-indigo-700 font-semibold"
+                          >
+                            <UploadCloud className="w-4 h-4 text-indigo-600" />
+                            Upload ke Google Drive
+                          </button>
+                        )}
+
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
