@@ -27,10 +27,21 @@ jobs:
       - name: Install Clasp
         run: npm install -g @google/clasp
 
-      - name: Create .clasprc.json Auth Credentials
+      - name: Setup .clasprc.json Credentials
         run: |
-          mkdir -p ~/.clasprc.json
-          echo '${{ secrets.CLASPRC_JSON }}' > ~/.clasprc.json
+          node -e "
+            const fs = require('fs');
+            const path = require('path');
+            const os = require('os');
+            const creds = process.env.CLASPRC_JSON;
+            if (!creds || !creds.trim()) {
+              console.error('ERROR: CLASPRC_JSON secret is empty!');
+              process.exit(1);
+            }
+            const targetPath = path.join(os.homedir(), '.clasprc.json');
+            fs.writeFileSync(targetPath, creds.trim(), 'utf8');
+            console.log('Successfully written ~/.clasprc.json');
+          "
         env:
           CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
 
@@ -38,13 +49,13 @@ jobs:
         run: |
           node -e "
             const fs = require('fs');
-            const scriptId = process.env.SCRIPT_ID || 'YOUR_SCRIPT_ID_HERE';
+            const scriptId = process.env.SCRIPT_ID || '1yuxhEVGXHL3Tjr9VF6y9UdxLG8VoR-3grOH5U4YIQUdYJB0LFy8i-zW7';
             const claspConfig = {
-              scriptId: scriptId,
+              scriptId: scriptId.trim(),
               rootDir: './google-apps-script'
             };
             fs.writeFileSync('.clasp.json', JSON.stringify(claspConfig, null, 2));
-            console.log('Configured .clasp.json with Script ID');
+            console.log('Configured .clasp.json with Script ID:', scriptId);
           "
         env:
           SCRIPT_ID: ${{ secrets.SCRIPT_ID }}
