@@ -1,14 +1,22 @@
 import type { Metadata, Viewport } from 'next';
+import { Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
 import { AudioProvider } from '@/context/AudioContext';
 
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-jakarta',
+  display: 'swap',
+});
+
 export const metadata: Metadata = {
-  title: 'SonicVault - Personal MP3 Music Player PWA',
-  description: 'Fast, offline-ready personal MP3 music player with lock screen media controls and IndexedDB storage.',
+  title: 'SonicVault - Personal MP3 Music Player',
+  description: 'Clean, minimalist, offline-ready personal MP3 music player with lock screen media controls.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'black-translucent',
+    statusBarStyle: 'default',
     title: 'SonicVault',
   },
   icons: {
@@ -18,7 +26,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#090d16',
+  themeColor: '#ffffff',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -32,14 +40,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="id">
+    <html lang="id" className={plusJakartaSans.variable}>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>
-      <body className="bg-background text-slate-100 min-h-screen">
+      <body className="bg-background text-slate-900 min-h-screen font-sans antialiased selection:bg-slate-900 selection:text-white">
         <AudioProvider>
           {children}
         </AudioProvider>
@@ -52,10 +60,10 @@ export default function RootLayout({
                 window.addEventListener('load', function() {
                   navigator.serviceWorker.register('/sw.js').then(
                     function(registration) {
-                      console.log('SonicVault ServiceWorker registered: ', registration.scope);
+                      console.log('SonicVault SW registered');
                     },
                     function(err) {
-                      console.log('SonicVault ServiceWorker registration failed: ', err);
+                      console.log('SonicVault SW registration failed:', err);
                     }
                   );
                 });

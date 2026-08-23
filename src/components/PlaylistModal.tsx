@@ -76,19 +76,19 @@ export default function PlaylistModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
-      <div className="bg-surface border border-border w-full max-w-md rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+      <div className="bg-white border border-slate-200 w-full max-w-md rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-surface-raised">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+            <div className="w-9 h-9 rounded-2xl bg-slate-900 flex items-center justify-center text-white">
               <ListMusic className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-white leading-tight">
+              <h3 className="text-base font-bold text-slate-900 leading-tight">
                 {selectedSongForPlaylist ? 'Tambah ke Playlist' : 'Kelola Playlist'}
               </h3>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500 font-medium">
                 {selectedSongForPlaylist
                   ? `Lagu: ${selectedSongForPlaylist.title}`
                   : `${playlists.length} playlist tersimpan`}
@@ -101,7 +101,7 @@ export default function PlaylistModal() {
               setSelectedSongForPlaylist(null);
               setIsPlaylistModalOpen(false);
             }}
-            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-surface transition-colors"
+            className="p-2 rounded-full text-slate-400 hover:text-slate-900 hover:bg-slate-200/60 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -109,29 +109,29 @@ export default function PlaylistModal() {
 
         {/* Content Body */}
         <div className="p-6 overflow-y-auto space-y-4 flex-1">
-          {/* Create New Playlist Input */}
+          {/* Create New Playlist */}
           {isCreating ? (
-            <form onSubmit={handleCreatePlaylist} className="p-3.5 rounded-2xl bg-surface-raised border border-border space-y-3">
+            <form onSubmit={handleCreatePlaylist} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
               <input
                 type="text"
                 placeholder="Nama playlist (misal: Workout, Chill, Santai)..."
                 value={newPlaylistName}
                 onChange={(e) => setNewPlaylistName(e.target.value)}
                 autoFocus
-                className="w-full px-3.5 py-2 rounded-xl bg-surface border border-border text-sm text-white focus:outline-none focus:border-emerald-500"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-sm font-semibold text-slate-900 focus:outline-none focus:border-slate-400"
               />
               <div className="flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setIsCreating(false)}
-                  className="px-3 py-1.5 rounded-lg border border-border text-xs text-slate-400 hover:text-white"
+                  className="px-3.5 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 hover:text-slate-900"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={!newPlaylistName.trim()}
-                  className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-semibold"
+                  className="px-4 py-1.5 rounded-lg bg-slate-900 hover:bg-black disabled:opacity-50 text-white text-xs font-bold"
                 >
                   Buat Playlist
                 </button>
@@ -140,16 +140,16 @@ export default function PlaylistModal() {
           ) : (
             <button
               onClick={() => setIsCreating(true)}
-              className="w-full py-3 px-4 rounded-2xl border border-dashed border-border hover:border-emerald-500 hover:bg-surface-raised flex items-center justify-center gap-2 text-sm font-semibold text-emerald-400 transition-colors"
+              className="w-full py-3 px-4 rounded-2xl border border-dashed border-slate-300 hover:border-slate-900 hover:bg-slate-50 flex items-center justify-center gap-2 text-sm font-bold text-slate-800 transition-colors"
             >
               <FolderPlus className="w-4 h-4" />
               Buat Playlist Baru
             </button>
           )}
 
-          {/* Playlist items list */}
+          {/* Playlist items */}
           {playlists.length === 0 ? (
-            <div className="py-8 text-center text-slate-400 text-xs">
+            <div className="py-8 text-center text-slate-400 text-xs font-medium">
               Belum ada playlist. Buat playlist baru di atas!
             </div>
           ) : (
@@ -161,7 +161,7 @@ export default function PlaylistModal() {
                 return (
                   <div
                     key={pl.id}
-                    className="flex items-center justify-between p-3 rounded-2xl bg-surface-raised hover:bg-surface-active border border-border transition-colors"
+                    className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors"
                   >
                     {/* Left details */}
                     <div
@@ -175,12 +175,12 @@ export default function PlaylistModal() {
                         }
                       }}
                     >
-                      <div className="w-9 h-9 rounded-xl bg-surface border border-border flex items-center justify-center text-slate-400 flex-shrink-0">
+                      <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 flex-shrink-0">
                         <Music className="w-4 h-4" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-xs font-bold text-white truncate">{pl.name}</p>
-                        <p className="text-[11px] text-slate-400">{pl.songIds.length} lagu</p>
+                        <p className="text-xs font-bold text-slate-900 truncate">{pl.name}</p>
+                        <p className="text-[11px] text-slate-500 font-medium">{pl.songIds.length} lagu</p>
                       </div>
                     </div>
 
@@ -189,10 +189,10 @@ export default function PlaylistModal() {
                       {selectedSongForPlaylist ? (
                         <button
                           onClick={() => handleToggleSongInPlaylist(pl)}
-                          className={`w-7 h-7 rounded-lg border flex items-center justify-center transition-colors ${
+                          className={`w-7 h-7 rounded-xl border flex items-center justify-center transition-colors ${
                             containsSong
-                              ? 'bg-emerald-600 border-emerald-500 text-white'
-                              : 'border-border text-transparent hover:border-slate-400'
+                              ? 'bg-slate-900 border-slate-900 text-white'
+                              : 'border-slate-300 text-transparent hover:border-slate-400'
                           }`}
                         >
                           <Check className="w-4 h-4" />
@@ -200,7 +200,7 @@ export default function PlaylistModal() {
                       ) : (
                         <button
                           onClick={() => handleDeletePlaylist(pl.id, pl.name)}
-                          className="p-2 text-slate-400 hover:text-rose-400 transition-colors"
+                          className="p-2 text-slate-400 hover:text-rose-600 transition-colors"
                           title="Hapus Playlist"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -215,13 +215,13 @@ export default function PlaylistModal() {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-border bg-surface-raised flex justify-end">
+        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end">
           <button
             onClick={() => {
               setSelectedSongForPlaylist(null);
               setIsPlaylistModalOpen(false);
             }}
-            className="px-5 py-2 rounded-xl bg-primary hover:bg-primary-600 text-white text-xs font-semibold transition-colors"
+            className="px-5 py-2 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold transition-colors"
           >
             Selesai
           </button>

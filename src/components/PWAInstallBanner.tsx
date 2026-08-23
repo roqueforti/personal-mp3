@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Download, X, Smartphone, Sparkles } from 'lucide-react';
+import { Download, X, Smartphone } from 'lucide-react';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -15,7 +15,6 @@ export default function PWAInstallBanner() {
   const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
-    // Check if already in standalone PWA mode
     if (
       window.matchMedia('(display-mode: standalone)').matches ||
       (window.navigator as any).standalone === true
@@ -24,7 +23,6 @@ export default function PWAInstallBanner() {
       return;
     }
 
-    // Check iOS Safari
     const userAgent = window.navigator.userAgent.toLowerCase();
     const isIosDevice = /iphone|ipad|ipod/.test(userAgent);
     setIsIOS(isIosDevice);
@@ -63,17 +61,19 @@ export default function PWAInstallBanner() {
   }
 
   return (
-    <div className="fixed top-16 left-4 right-4 max-w-lg mx-auto z-40 bg-surface-raised border border-primary/40 rounded-2xl p-3.5 shadow-2xl animate-fade-in flex items-center justify-between gap-3">
+    <div className="fixed top-16 left-4 right-4 max-w-md mx-auto z-40 bg-white border border-slate-200 rounded-3xl p-3.5 shadow-xl animate-fade-in flex items-center justify-between gap-3">
       <div className="flex items-center gap-3 min-w-0">
-        <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center flex-shrink-0 text-white shadow-md shadow-primary/30">
+        <div className="w-10 h-10 rounded-2xl bg-slate-900 flex items-center justify-center flex-shrink-0 text-white shadow-sm">
           <Smartphone className="w-5 h-5" />
         </div>
         <div className="min-w-0">
-          <h4 className="text-xs font-bold text-white leading-tight flex items-center gap-1.5">
+          <h4 className="text-xs font-bold text-slate-900 leading-tight flex items-center gap-1.5">
             <span>Install SonicVault di HP</span>
-            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-primary text-white">PWA</span>
+            <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-800 border border-slate-200">
+              PWA
+            </span>
           </h4>
-          <p className="text-[11px] text-slate-300 truncate mt-0.5">
+          <p className="text-[11px] text-slate-500 font-medium truncate mt-0.5">
             Bisa putar di Lock Screen & Offline tanpa internet
           </p>
         </div>
@@ -82,13 +82,13 @@ export default function PWAInstallBanner() {
       <div className="flex items-center gap-1.5 flex-shrink-0">
         <button
           onClick={handleInstallClick}
-          className="px-3 py-1.5 rounded-xl bg-primary hover:bg-primary-600 text-white text-xs font-bold transition-all shadow-sm"
+          className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold transition-all shadow-sm"
         >
           {isIOS ? 'Petunjuk' : 'Install'}
         </button>
         <button
           onClick={() => setIsDismissed(true)}
-          className="p-1.5 text-slate-400 hover:text-white rounded-lg"
+          className="p-1.5 text-slate-400 hover:text-slate-900 rounded-full"
         >
           <X className="w-4 h-4" />
         </button>

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useAudio } from '@/context/AudioContext';
 import { Song } from '@/types/music';
-import { formatTime, formatFileSize } from '@/lib/formatters';
+import { formatTime } from '@/lib/formatters';
 import { generateSynthwaveDemo, generateLofiDemo } from '@/lib/demoTracks';
 import * as db from '@/lib/db';
 import {
@@ -54,19 +54,19 @@ export default function SongList() {
 
   if (filteredSongs.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-        <div className="w-20 h-20 rounded-3xl bg-surface-raised border border-border flex items-center justify-center mb-5 text-primary shadow-xl">
-          <Disc3 className="w-10 h-10 animate-spin-slow text-primary-400" />
+      <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+        <div className="w-20 h-20 rounded-3xl bg-white border border-slate-200 flex items-center justify-center mb-5 shadow-sm">
+          <Disc3 className="w-10 h-10 text-slate-800 animate-spin-slow" />
         </div>
-        <h3 className="text-xl font-bold text-white mb-2">Vault Musik Masih Kosong</h3>
-        <p className="text-slate-400 text-sm max-w-md mb-6 leading-relaxed">
+        <h3 className="text-xl font-bold text-slate-900 mb-2">Vault Musik Masih Kosong</h3>
+        <p className="text-slate-500 text-sm max-w-md mb-6 leading-relaxed">
           Upload file MP3 favorit kamu langsung dari HP atau laptop. Musik tersimpan aman di browser,
           bisa diputar offline dan di lock screen!
         </p>
         <div className="flex flex-col sm:flex-row items-center gap-3">
           <button
             onClick={() => setIsUploadOpen(true)}
-            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-primary hover:bg-primary-600 text-white font-semibold text-sm transition-transform active:scale-95 shadow-lg shadow-primary/30 w-full sm:w-auto justify-center"
+            className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-slate-900 hover:bg-black text-white font-bold text-sm transition-transform active:scale-95 shadow-md w-full sm:w-auto justify-center"
           >
             <Upload className="w-4 h-4" />
             Upload File MP3
@@ -74,9 +74,9 @@ export default function SongList() {
           <button
             onClick={handleLoadDemoSongs}
             disabled={isGeneratingDemo}
-            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-surface-raised hover:bg-surface-active border border-border text-slate-200 hover:text-white font-semibold text-sm transition-all w-full sm:w-auto justify-center"
+            className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-bold text-sm transition-all w-full sm:w-auto justify-center shadow-sm"
           >
-            <Sparkles className="w-4 h-4 text-amber-400" />
+            <Sparkles className="w-4 h-4 text-amber-500" />
             {isGeneratingDemo ? 'Membuat Demo Audio...' : 'Coba 2 Musik Demo'}
           </button>
         </div>
@@ -86,7 +86,6 @@ export default function SongList() {
 
   const handleSongClick = (song: Song) => {
     if (currentSong?.id === song.id) {
-      // Toggle play or open full player
       if (!isPlaying) {
         togglePlay();
       } else {
@@ -98,33 +97,33 @@ export default function SongList() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-4 pb-36">
-      <div className="flex items-center justify-between mb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider px-2">
+    <div className="max-w-4xl mx-auto px-4 py-4 pb-36">
+      <div className="flex items-center justify-between mb-3 text-xs font-bold text-slate-400 uppercase tracking-wider px-2">
         <span>Daftar Musik ({filteredSongs.length})</span>
         <span>Durasi</span>
       </div>
 
-      <div className="space-y-1.5">
-        {filteredSongs.map((song, index) => {
+      <div className="space-y-2">
+        {filteredSongs.map((song) => {
           const isCurrent = currentSong?.id === song.id;
           const isMenuOpen = menuOpenId === song.id;
 
           return (
             <div
               key={song.id}
-              className={`group relative flex items-center justify-between p-2.5 sm:p-3 rounded-2xl border transition-all select-none ${
+              className={`group relative flex items-center justify-between p-3 rounded-2xl border transition-all select-none ${
                 isCurrent
-                  ? 'bg-surface-active border-primary/50 shadow-md'
-                  : 'bg-surface hover:bg-surface-raised border-border'
+                  ? 'bg-slate-100 border-slate-900 shadow-sm'
+                  : 'bg-white hover:bg-slate-50 border-slate-200'
               }`}
             >
               {/* Left Section: Cover & Details */}
               <div
-                className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer"
+                className="flex items-center gap-3.5 min-w-0 flex-1 cursor-pointer"
                 onClick={() => handleSongClick(song)}
               >
                 {/* Cover Thumbnail */}
-                <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-surface-raised border border-border flex-shrink-0 flex items-center justify-center shadow-sm">
+                <div className="relative w-12 h-12 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 flex-shrink-0 flex items-center justify-center shadow-sm">
                   {song.coverArt ? (
                     <img
                       src={song.coverArt}
@@ -132,25 +131,25 @@ export default function SongList() {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-slate-800 to-indigo-950 flex items-center justify-center">
-                      <Music className="w-5 h-5 text-slate-400 group-hover:text-primary-300" />
+                    <div className="w-full h-full bg-slate-100 flex items-center justify-center">
+                      <Music className="w-5 h-5 text-slate-400 group-hover:text-slate-700" />
                     </div>
                   )}
 
                   {/* Play / Active Animation Overlay */}
                   <div
-                    className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${
+                    className={`absolute inset-0 bg-black/30 flex items-center justify-center transition-opacity ${
                       isCurrent ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                     }`}
                   >
                     {isCurrent && isPlaying ? (
                       <div className="flex items-end gap-0.5 h-4">
-                        <span className="w-1 bg-primary-400 rounded-full animate-bounce h-3" />
-                        <span className="w-1 bg-primary-400 rounded-full animate-bounce delay-100 h-4" />
-                        <span className="w-1 bg-primary-400 rounded-full animate-bounce delay-200 h-2" />
+                        <span className="w-1 bg-white rounded-full animate-bounce h-3" />
+                        <span className="w-1 bg-white rounded-full animate-bounce delay-100 h-4" />
+                        <span className="w-1 bg-white rounded-full animate-bounce delay-200 h-2" />
                       </div>
                     ) : (
-                      <Play className="w-5 h-5 text-white fill-white" />
+                      <Play className="w-5 h-5 text-white fill-white ml-0.5" />
                     )}
                   </div>
                 </div>
@@ -158,22 +157,22 @@ export default function SongList() {
                 {/* Track Title & Artist */}
                 <div className="min-w-0 flex-1 pr-2">
                   <h4
-                    className={`text-sm font-semibold truncate leading-snug ${
-                      isCurrent ? 'text-primary-400' : 'text-slate-100 group-hover:text-white'
+                    className={`text-sm font-bold truncate leading-snug ${
+                      isCurrent ? 'text-slate-900' : 'text-slate-800 group-hover:text-slate-900'
                     }`}
                   >
                     {song.title}
                   </h4>
-                  <p className="text-xs text-slate-400 truncate mt-0.5">
+                  <p className="text-xs text-slate-500 font-medium truncate mt-0.5">
                     {song.artist} <span className="opacity-40">•</span> {song.album}
                   </p>
                 </div>
               </div>
 
               {/* Right Section: Time & Actions */}
-              <div className="flex items-center gap-1 sm:gap-3 flex-shrink-0">
+              <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                 {/* Duration */}
-                <span className="text-xs text-slate-400 font-mono hidden sm:inline-block w-12 text-right">
+                <span className="text-xs text-slate-500 font-semibold font-mono hidden sm:inline-block w-12 text-right">
                   {formatTime(song.duration)}
                 </span>
 
@@ -184,23 +183,23 @@ export default function SongList() {
                     toggleFavorite(song.id);
                   }}
                   title={song.favorite ? 'Hapus dari Favorit' : 'Tambah ke Favorit'}
-                  className={`p-2 rounded-xl transition-colors ${
-                    song.favorite
-                      ? 'text-rose-500 hover:text-rose-400'
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
+                  className="p-2 rounded-full text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
                 >
-                  <Heart className={`w-4 h-4 ${song.favorite ? 'fill-rose-500' : ''}`} />
+                  <Heart
+                    className={`w-4 h-4 ${
+                      song.favorite ? 'fill-slate-900 text-slate-900' : 'text-slate-600'
+                    }`}
+                  />
                 </button>
 
-                {/* Context Menu Trigger */}
+                {/* Context Menu */}
                 <div className="relative">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       setMenuOpenId(isMenuOpen ? null : song.id);
                     }}
-                    className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-surface-raised transition-colors"
+                    className="p-2 rounded-full text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
                   >
                     <MoreVertical className="w-4 h-4" />
                   </button>
@@ -215,7 +214,7 @@ export default function SongList() {
                           setMenuOpenId(null);
                         }}
                       />
-                      <div className="absolute right-0 top-full mt-1 w-48 rounded-xl bg-surface-raised border border-border shadow-2xl z-50 py-1.5 text-xs text-slate-200">
+                      <div className="absolute right-0 top-full mt-1 w-48 rounded-2xl bg-white border border-slate-200 shadow-xl z-50 py-1.5 text-xs font-semibold text-slate-700">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -223,9 +222,9 @@ export default function SongList() {
                             setIsPlaylistModalOpen(true);
                             setMenuOpenId(null);
                           }}
-                          className="w-full px-3.5 py-2.5 text-left flex items-center gap-2.5 hover:bg-surface-active text-slate-200 hover:text-white"
+                          className="w-full px-3.5 py-2.5 text-left flex items-center gap-2.5 hover:bg-slate-100 text-slate-800"
                         >
-                          <ListPlus className="w-4 h-4 text-primary-400" />
+                          <ListPlus className="w-4 h-4 text-slate-600" />
                           Tambah ke Playlist
                         </button>
                         <button
@@ -236,7 +235,7 @@ export default function SongList() {
                             }
                             setMenuOpenId(null);
                           }}
-                          className="w-full px-3.5 py-2.5 text-left flex items-center gap-2.5 hover:bg-rose-500/10 text-rose-400 hover:text-rose-300"
+                          className="w-full px-3.5 py-2.5 text-left flex items-center gap-2.5 hover:bg-rose-50 text-rose-600"
                         >
                           <Trash2 className="w-4 h-4" />
                           Hapus Lagu
