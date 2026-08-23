@@ -12,6 +12,7 @@ import {
   Clock,
   HardDrive,
   ListMusic,
+  Cloud,
   X,
 } from 'lucide-react';
 import { formatFileSize } from '@/lib/formatters';
@@ -28,6 +29,9 @@ export default function Navbar() {
     setIsEqualizerOpen,
     setIsSleepTimerOpen,
     setIsPlaylistModalOpen,
+    setIsCloudModalOpen,
+    isCloudConnected,
+    isSyncing,
     sleepTimer,
     storageInfo,
   } = useAudio();
@@ -67,6 +71,19 @@ export default function Navbar() {
               <span>{formatFileSize(storageInfo.usedBytes)}</span>
               <span className="hidden sm:inline text-emerald-600 font-bold">• Offline</span>
             </div>
+
+            {/* Cloud Sync Button */}
+            <button
+              onClick={() => setIsCloudModalOpen(true)}
+              title={isCloudConnected ? 'Cloud Sync Terhubung (Google Drive & Sheets)' : 'Hubungkan Cloud (Multi-Device Sync)'}
+              className={`p-2.5 rounded-xl border transition-colors ${
+                isCloudConnected
+                  ? 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100'
+                  : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-700 hover:text-slate-900'
+              }`}
+            >
+              <Cloud className={`w-4 h-4 ${isSyncing ? 'animate-bounce text-indigo-600' : ''}`} />
+            </button>
 
             {/* Equalizer */}
             <button

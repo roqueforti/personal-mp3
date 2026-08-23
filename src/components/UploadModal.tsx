@@ -4,6 +4,7 @@ import React, { useState, useRef } from 'react';
 import { useAudio } from '@/context/AudioContext';
 import { parseAudioFile } from '@/lib/id3Parser';
 import * as db from '@/lib/db';
+import * as cloudApi from '@/lib/cloudApi';
 import { Song } from '@/types/music';
 import { formatFileSize, formatTime } from '@/lib/formatters';
 import {
@@ -72,11 +73,35 @@ export default function UploadModal() {
     if (parsedSongs.length === 0) return;
 
     setIsSaving(true);
-    setProgressText('Menyimpan ke IndexedDB di HP/Browser...');
+    setProgressText('Menyimpan audio ke memori lokal...');
 
     try {
+      // 1. Save locally to IndexedDB first
       await db.saveSongsBatch(parsedSongs);
       await refreshSongs();
+
+      // 2. If Cloud Apps Script is configured, upload to Google Drive in background
+      if (cloudApi.isCloudConfigured()) {
+        setProgressText('Mengunggah ke Google Drive & Cloud Database...');
+        for (let i = 0; i < parsedSongs.length; i++) {
+          const song = parsedSongs[i];
+          const fileBlob = selectedFiles[i] || song.blob;
+          if (fileBlob) {
+            setProgressText(`Mengunggah (${i + 1}/${parsedSongs.length}): ${song.title}...`);
+            try {
+              const cloudSong = await cloudApi.uploadSongToCloud(song, fileBlob);
+              if (cloudSong) {
+                // Update local song with cloud driveFileId & streamUrl
+                await db.saveSong({ ...song, driveFileId: cloudSong.driveFileId, streamUrl: cloudSong.streamUrl });
+              }
+            } catch (err) {
+              console.warn('Cloud upload skipped or failed for song:', song.title, err);
+            }
+          }
+        }
+        await refreshSongs();
+      }
+
       setSelectedFiles([]);
       setParsedSongs([]);
       setIsUploadOpen(false);

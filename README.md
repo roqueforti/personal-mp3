@@ -8,6 +8,11 @@ Designed specifically for seamless phone playback, background audio continuation
 
 ## ✨ Fitur Utama (Key Features)
 
+- ☁️ **Sinkronisasi Multi-Device (Google Apps Script & Google Drive)**:
+  - File MP3 yang di-upload dari HP atau Laptop otomatis tersimpan di **Google Drive pribadi kamu** via Google Apps Script Web App.
+  - Metadata lagu & playlist tersimpan di **Google Sheets**.
+  - Bebas kuota server cloud, gratis 100%, dan otomatis sinkron antar semua perangkat.
+  - **Hybrid Caching**: Audio tetap di-cache di memori lokal HP (IndexedDB) setelah streaming/download sehingga tetap bisa diputar saat offline.
 - 📱 **Mobile-First & PWA Standalone**:
   - Bisa diinstall langsung di Android (Chrome) & iOS (Safari "Add to Home Screen").
   - Berjalan seperti aplikasi native tanpa address bar browser.

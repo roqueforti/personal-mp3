@@ -17,6 +17,7 @@ import {
   SleepTimerState,
 } from '@/types/music';
 import * as db from '@/lib/db';
+import * as cloudApi from '@/lib/cloudApi';
 import { MediaSessionController } from '@/lib/mediaSession';
 
 export const EQUALIZER_FREQUENCIES = [60, 230, 910, 3600, 14000];
@@ -96,8 +97,15 @@ interface AudioContextType {
   setIsEqualizerOpen: (open: boolean) => void;
   isSleepTimerOpen: boolean;
   setIsSleepTimerOpen: (open: boolean) => void;
+  isCloudModalOpen: boolean;
+  setIsCloudModalOpen: (open: boolean) => void;
   selectedSongForPlaylist: Song | null;
   setSelectedSongForPlaylist: (song: Song | null) => void;
+
+  // Cloud Sync
+  isCloudConnected: boolean;
+  isSyncing: boolean;
+  syncWithCloud: () => Promise<void>;
 
   // Storage stats
   storageInfo: { usedBytes: number; quotaBytes: number; percentage: number; isPersisted: boolean };
@@ -131,7 +139,12 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState<boolean>(false);
   const [isEqualizerOpen, setIsEqualizerOpen] = useState<boolean>(false);
   const [isSleepTimerOpen, setIsSleepTimerOpen] = useState<boolean>(false);
+  const [isCloudModalOpen, setIsCloudModalOpen] = useState<boolean>(false);
   const [selectedSongForPlaylist, setSelectedSongForPlaylist] = useState<Song | null>(null);
+
+  // Cloud state
+  const [isCloudConnected, setIsCloudConnected] = useState<boolean>(false);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
 
   // Storage Stats
   const [storageInfo, setStorageInfo] = useState({ usedBytes: 0, quotaBytes: 0, percentage: 0, isPersisted: false });
@@ -157,7 +170,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const analyserNodeRef = useRef<AnalyserNode | null>(null);
   const gainNodeRef = useRef<GainNode | null>(null);
 
-  // Repeat and Shuffle references for stable callbacks
   const repeatModeRef = useRef(repeatMode);
   repeatModeRef.current = repeatMode;
   const currentSongRef = useRef(currentSong);
@@ -173,7 +185,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
     const audio = new Audio();
     audio.preload = 'auto';
-    // Mobile optimization attributes for background playback
     audio.setAttribute('playsinline', 'true');
     audio.setAttribute('webkit-playsinline', 'true');
     audioRef.current = audio;
@@ -205,7 +216,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     };
 
     const onEnded = () => {
-      // Check sleep timer end-of-track condition
       if (sleepTimerRef.current.active && sleepTimerRef.current.endOfTrack) {
         setSleepTimer({
           active: false,
@@ -275,18 +285,15 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       });
       filterNodesRef.current = filters;
 
-      // Analyser for real-time visualization
       const analyser = ctx.createAnalyser();
       analyser.fftSize = 128;
       analyser.smoothingTimeConstant = 0.8;
       analyserNodeRef.current = analyser;
 
-      // Gain node for master control & fade out
       const gain = ctx.createGain();
       gain.gain.value = volume;
       gainNodeRef.current = gain;
 
-      // Connect graph: source -> filters -> analyser -> gain -> destination
       let lastNode: AudioNode = source;
       for (const f of filters) {
         lastNode.connect(f);
@@ -296,7 +303,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       analyser.connect(gain);
       gain.connect(ctx.destination);
     } catch (e) {
-      console.warn('Web Audio API initialization failed (may require user gesture)', e);
+      console.warn('Web Audio API initialization note:', e);
     }
   };
 
@@ -325,16 +332,72 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     setStorageInfo(stats);
   };
 
+  // Cloud Synchronization Function
+  const syncWithCloud = useCallback(async () => {
+    if (!cloudApi.isCloudConfigured()) {
+      setIsCloudConnected(false);
+      return;
+    }
+
+    setIsSyncing(true);
+    setIsCloudConnected(true);
+
+    try {
+      // 1. Fetch cloud songs
+      const cloudSongs = await cloudApi.fetchCloudSongs();
+      if (cloudSongs.length > 0) {
+        // Merge with local IndexedDB
+        const localSongs = await db.getAllSongs();
+        const localMap = new Map(localSongs.map((s) => [s.id, s]));
+
+        const songsToSave: Song[] = [];
+        for (const cs of cloudSongs) {
+          const existing = localMap.get(cs.id);
+          if (existing) {
+            // Keep local blob if present, update metadata
+            songsToSave.push({
+              ...existing,
+              ...cs,
+              blob: existing.blob,
+            });
+          } else {
+            songsToSave.push(cs);
+          }
+        }
+
+        await db.saveSongsBatch(songsToSave);
+        await refreshSongs();
+      }
+
+      // 2. Fetch cloud playlists
+      const cloudPls = await cloudApi.fetchCloudPlaylists();
+      if (cloudPls.length > 0) {
+        for (const pl of cloudPls) {
+          await db.savePlaylist(pl);
+        }
+        await refreshPlaylists();
+      }
+    } catch (err) {
+      console.error('Failed to sync with Google Apps Script cloud:', err);
+    } finally {
+      setIsSyncing(false);
+      updateStorageStats();
+    }
+  }, []);
+
   useEffect(() => {
     refreshSongs();
     refreshPlaylists();
-  }, []);
+    if (cloudApi.isCloudConfigured()) {
+      setIsCloudConnected(true);
+      syncWithCloud();
+    }
+  }, [syncWithCloud]);
 
-  // Filter & Search computation
+  // Filter & Search
   const filteredSongs = React.useMemo(() => {
     let result = [...songs];
 
-    // Filter by category
     if (activeFilter === 'favorites') {
       result = result.filter((s) => s.favorite);
     } else if (activeFilter === 'recent') {
@@ -342,7 +405,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         .filter((s) => (s.lastPlayed || 0) > 0)
         .sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0));
     } else if (activeFilter !== 'all') {
-      // Must be a playlist ID
       const pl = playlists.find((p) => p.id === activeFilter);
       if (pl) {
         const idSet = new Set(pl.songIds);
@@ -350,7 +412,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // Filter by search query
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       result = result.filter(
@@ -364,7 +425,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     return result;
   }, [songs, playlists, activeFilter, searchQuery]);
 
-  // Master Play Function
+  // Master Play Function (Supports Local IndexedDB Blobs + Cloud Audio Streaming)
   const playSong = useCallback(
     async (song: Song, newQueue?: Song[]) => {
       initWebAudio();
@@ -383,29 +444,41 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       setCurrentSong(song);
       setIsLoadingAudio(true);
 
-      // Clean old object URL
       if (activeBlobUrlRef.current) {
         URL.revokeObjectURL(activeBlobUrlRef.current);
         activeBlobUrlRef.current = null;
       }
 
       let audioBlob = song.blob;
-      // If blob is not attached in memory, retrieve full record from IndexedDB
       if (!audioBlob) {
         const full = await db.getSongById(song.id);
         audioBlob = full?.blob;
       }
 
-      if (!audioBlob) {
-        console.error('No audio blob found for song:', song.title);
+      if (audioBlob) {
+        // Play directly from local IndexedDB Blob
+        const objectUrl = URL.createObjectURL(audioBlob);
+        activeBlobUrlRef.current = objectUrl;
+        audioRef.current.src = objectUrl;
+      } else if (song.streamUrl) {
+        // Stream directly from Google Drive / Cloud URL
+        audioRef.current.src = song.streamUrl;
+
+        // In background, fetch blob and cache to IndexedDB for offline play
+        fetch(song.streamUrl)
+          .then((res) => res.blob())
+          .then(async (blob) => {
+            const updated: Song = { ...song, blob };
+            await db.saveSong(updated);
+            setSongs((prev) => prev.map((s) => (s.id === song.id ? updated : s)));
+          })
+          .catch(() => {});
+      } else {
+        console.error('No audio source found for song:', song.title);
         setIsLoadingAudio(false);
         return;
       }
 
-      const objectUrl = URL.createObjectURL(audioBlob);
-      activeBlobUrlRef.current = objectUrl;
-
-      audioRef.current.src = objectUrl;
       audioRef.current.playbackRate = playbackRate;
       audioRef.current.volume = volume;
 
@@ -436,13 +509,11 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     let nextIdx = curIdx + 1;
     if (nextIdx >= currentList.length) {
       if (repeatModeRef.current === 'off') {
-        if (audioRef.current) {
-          audioRef.current.pause();
-        }
+        if (audioRef.current) audioRef.current.pause();
         setIsPlaying(false);
         return;
       }
-      nextIdx = 0; // Loop around in 'all' mode
+      nextIdx = 0;
     }
 
     playSong(currentList[nextIdx]);
@@ -451,7 +522,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   // Play Previous
   const handlePrevTrack = useCallback(() => {
     if (audioRef.current && audioRef.current.currentTime > 3) {
-      // If played more than 3s, restart current song
       audioRef.current.currentTime = 0;
       return;
     }
@@ -470,7 +540,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     playSong(currentList[prevIdx]);
   }, [playSong]);
 
-  // Toggle Play / Pause
+  // Toggle Play
   const togglePlay = useCallback(() => {
     if (!audioRef.current) return;
 
@@ -508,47 +578,38 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const setVolume = useCallback((vol: number) => {
     const clamped = Math.max(0, Math.min(1, vol));
     setVolumeState(clamped);
-    if (audioRef.current) {
-      audioRef.current.volume = clamped;
-    }
-    if (gainNodeRef.current) {
-      gainNodeRef.current.gain.value = clamped;
-    }
+    if (audioRef.current) audioRef.current.volume = clamped;
+    if (gainNodeRef.current) gainNodeRef.current.gain.value = clamped;
   }, []);
 
   // Playback Rate
   const setPlaybackRate = useCallback((rate: number) => {
     setPlaybackRateState(rate);
-    if (audioRef.current) {
-      audioRef.current.playbackRate = rate;
-    }
+    if (audioRef.current) audioRef.current.playbackRate = rate;
   }, []);
 
-  // Shuffle Toggle
+  // Shuffle
   const toggleShuffle = useCallback(() => {
     setIsShuffle((prev) => {
       const nextShuffle = !prev;
       if (nextShuffle) {
-        // Shuffle queue
         const cur = currentSongRef.current;
         const currentList = [...queueRef.current];
         const shuffled = [...currentList].sort(() => Math.random() - 0.5);
         if (cur) {
-          // Keep current song at index 0
           const withoutCur = shuffled.filter((s) => s.id !== cur.id);
           setQueue([cur, ...withoutCur]);
         } else {
           setQueue(shuffled);
         }
       } else {
-        // Restore original queue
         setQueue(originalQueue.length > 0 ? originalQueue : songs);
       }
       return nextShuffle;
     });
   }, [originalQueue, songs]);
 
-  // Cycle Repeat Mode
+  // Repeat
   const cycleRepeatMode = useCallback(() => {
     setRepeatMode((prev) => {
       if (prev === 'off') return 'all';
@@ -567,6 +628,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       if (currentSong?.id === songId) {
         setCurrentSong((prev) => (prev ? { ...prev, favorite: isFav } : null));
       }
+      if (cloudApi.isCloudConfigured()) {
+        cloudApi.toggleCloudFavorite(songId).catch(console.error);
+      }
     },
     [currentSong]
   );
@@ -578,18 +642,19 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       setSongs((prev) => prev.filter((s) => s.id !== songId));
       setQueue((prev) => prev.filter((s) => s.id !== songId));
       if (currentSong?.id === songId) {
-        if (audioRef.current) {
-          audioRef.current.pause();
-        }
+        if (audioRef.current) audioRef.current.pause();
         setCurrentSong(null);
         setIsPlaying(false);
       }
       updateStorageStats();
+      if (cloudApi.isCloudConfigured()) {
+        cloudApi.deleteSongFromCloud(songId).catch(console.error);
+      }
     },
     [currentSong]
   );
 
-  // Register Media Session callbacks
+  // MediaSession Handlers
   useEffect(() => {
     MediaSessionController.getInstance().registerActionHandlers({
       onPlay: togglePlay,
@@ -619,7 +684,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     setEqPresetState('Custom');
   }, []);
 
-  // Equalizer Preset Update
   const setEqPreset = useCallback((name: EqualizerPresetName) => {
     setEqPresetState(name);
     const gains = EQUALIZER_PRESETS[name];
@@ -633,7 +697,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Sleep Timer Controller
+  // Sleep Timer
   const startSleepTimer = useCallback((minutes: number, endOfTrack = false) => {
     if (endOfTrack) {
       setSleepTimer({
@@ -664,7 +728,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  // Sleep Timer Countdown Loop
   useEffect(() => {
     if (!sleepTimer.active || sleepTimer.endOfTrack || !sleepTimer.targetTimestamp) {
       return;
@@ -674,7 +737,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       const now = Date.now();
       const diffMs = (sleepTimer.targetTimestamp || 0) - now;
       if (diffMs <= 0) {
-        // Timer completed! Fade out and pause
         clearInterval(interval);
         if (audioRef.current) {
           let curVol = audioRef.current.volume;
@@ -685,7 +747,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
               clearInterval(fadeInterval);
               audioRef.current?.pause();
               setIsPlaying(false);
-              setVolume(volume); // reset master volume for next play
+              setVolume(volume);
             }
           }, 200);
         }
@@ -750,8 +812,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         setIsEqualizerOpen,
         isSleepTimerOpen,
         setIsSleepTimerOpen,
+        isCloudModalOpen,
+        setIsCloudModalOpen,
         selectedSongForPlaylist,
         setSelectedSongForPlaylist,
+        isCloudConnected,
+        isSyncing,
+        syncWithCloud,
         storageInfo,
       }}
     >

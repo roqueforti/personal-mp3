@@ -9,11 +9,12 @@ import UploadModal from '@/components/UploadModal';
 import EqualizerModal from '@/components/EqualizerModal';
 import SleepTimerModal from '@/components/SleepTimerModal';
 import PlaylistModal from '@/components/PlaylistModal';
+import CloudSettingsModal from '@/components/CloudSettingsModal';
 import PWAInstallBanner from '@/components/PWAInstallBanner';
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-background text-slate-100 flex flex-col relative selection:bg-primary-500 selection:text-white">
+    <main className="min-h-screen bg-background text-slate-900 flex flex-col relative selection:bg-slate-900 selection:text-white">
       {/* Top Navigation */}
       <Navbar />
 
@@ -34,6 +35,7 @@ export default function HomePage() {
       <EqualizerModal />
       <SleepTimerModal />
       <PlaylistModal />
+      <CloudSettingsModal />
     </main>
   );
 }

@@ -8,6 +8,8 @@ export interface Song {
   mimeType: string;
   coverArt?: string; // Data URL or object URL
   blob?: Blob; // Raw audio file (in IndexedDB)
+  driveFileId?: string; // Google Drive file ID
+  streamUrl?: string; // Google Drive stream URL
   dateAdded: number; // timestamp
   playCount: number;
   lastPlayed?: number;
