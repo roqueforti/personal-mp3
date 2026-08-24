@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAudio } from '@/context/AudioContext';
-import * as cloudApi from '@/lib/cloudApi';
-import * as db from '@/lib/db';
+import * as supabase from '@/lib/supabase';
 import {
   X,
   Cloud,
@@ -13,323 +12,219 @@ import {
   Check,
   ExternalLink,
   RefreshCw,
-  HelpCircle,
   Database,
-  UploadCloud,
-  DownloadCloud,
-  Download,
-  Loader2,
   Trash2,
+  Sparkles,
+  Upload,
 } from 'lucide-react';
 
 export default function CloudSettingsModal() {
   const {
-    songs,
     isCloudModalOpen,
     setIsCloudModalOpen,
+    setIsStudioOpen,
     syncWithCloud,
-    refreshSongs,
-    isSyncing,
     clearAllLocalSongs,
-    downloadAllSongsForOffline,
-    isDownloadingAll,
-    downloadProgress,
+    isCloudConnected,
+    isSyncing,
   } = useAudio();
 
-  const [url, setUrl] = useState('');
+  const [supabaseUrl, setSupabaseUrl] = useState('');
+  const [supabaseKey, setSupabaseKey] = useState('');
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   const [testMessage, setTestMessage] = useState('');
-  const [copiedScript, setCopiedScript] = useState(false);
-  const [showInstructions, setShowInstructions] = useState(false);
-
-  // Migration / Bulk Upload State
-  const [isMigrating, setIsMigrating] = useState(false);
-  const [migrationProgress, setMigrationProgress] = useState({ current: 0, total: 0, text: '' });
-  const [migrationSuccess, setMigrationSuccess] = useState(false);
+  const [copiedSql, setCopiedSql] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setUrl(cloudApi.getAppScriptUrl());
+    if (typeof window !== 'undefined' && isCloudModalOpen) {
+      setSupabaseUrl(supabase.getSupabaseUrl());
+      setSupabaseKey(supabase.getSupabaseAnonKey());
+      setTestStatus('idle');
+      setTestMessage('');
     }
   }, [isCloudModalOpen]);
 
   if (!isCloudModalOpen) return null;
 
-  // Find local songs that haven't been uploaded to Google Drive yet
-  const localOnlySongs = songs.filter((s) => !s.driveFileId);
-
-  const handleSave = async () => {
-    cloudApi.setAppScriptUrl(url);
-    if (url) {
-      await syncWithCloud();
-    }
-    setIsCloudModalOpen(false);
-  };
-
-  const handleTestConnection = async () => {
-    if (!url.trim()) {
+  const handleTestAndSave = async () => {
+    if (!supabaseUrl.trim() || !supabaseKey.trim()) {
       setTestStatus('error');
-      setTestMessage('Silakan masukkan Web App URL Google Apps Script Anda.');
+      setTestMessage('Silakan masukkan Project URL dan Anon Key Supabase.');
       return;
     }
 
     setTestStatus('testing');
-    setTestMessage('Mencoba menghubungi Google Apps Script...');
+    setTestMessage('Menghubungkan ke Supabase...');
 
-    const result = await cloudApi.pingCloud(url.trim());
+    supabase.setSupabaseConfig(supabaseUrl, supabaseKey);
+    const result = await supabase.pingSupabase(supabaseUrl, supabaseKey);
+
     if (result.success) {
       setTestStatus('success');
       setTestMessage(result.message);
-      cloudApi.setAppScriptUrl(url.trim());
+      await syncWithCloud();
     } else {
       setTestStatus('error');
       setTestMessage(result.message);
     }
   };
 
-  const handleMigrateLocalSongs = async () => {
-    if (!url.trim()) {
-      alert('Silakan masukkan dan simpan Web App URL Google Apps Script terlebih dahulu.');
-      return;
-    }
-
-    cloudApi.setAppScriptUrl(url.trim());
-    setIsMigrating(true);
-    setMigrationSuccess(false);
-
-    try {
-      const allDbSongs = await db.getAllSongs();
-      const songsToUpload = allDbSongs.filter((s) => !s.driveFileId);
-      const total = songsToUpload.length;
-
-      setMigrationProgress({ current: 0, total, text: `Mempersiapkan ${total} lagu...` });
-
-      for (let i = 0; i < total; i++) {
-        const song = songsToUpload[i];
-        setMigrationProgress({
-          current: i + 1,
-          total,
-          text: `Mengunggah (${i + 1}/${total}): ${song.title}...`,
-        });
-
-        let audioBlob = song.blob;
-        if (!audioBlob) {
-          const full = await db.getSongById(song.id);
-          audioBlob = full?.blob;
-        }
-
-        if (audioBlob) {
-          try {
-            const uploadedSong = await cloudApi.uploadSongToCloud(song, audioBlob);
-            if (uploadedSong) {
-              await db.saveSong({
-                ...song,
-                driveFileId: uploadedSong.driveFileId,
-                streamUrl: uploadedSong.streamUrl,
-              });
-            }
-          } catch (e) {
-            console.error('Failed to upload song to cloud:', song.title, e);
-          }
-        }
-      }
-
-      await refreshSongs();
-      setMigrationSuccess(true);
-    } catch (err: any) {
-      alert('Terjadi kesalahan saat migrasi: ' + err.message);
-    } finally {
-      setIsMigrating(false);
-    }
-  };
-
-  const copyScriptCode = async () => {
-    try {
-      const res = await fetch('/google-apps-script/Code.gs');
-      let text = '';
-      if (res.ok) {
-        text = await res.text();
-      } else {
-        text = `// Silakan copy file Code.gs dari repository https://github.com/roqueforti/personal-mp3/blob/main/google-apps-script/Code.gs`;
-      }
-      await navigator.clipboard.writeText(text);
-      setCopiedScript(true);
-      setTimeout(() => setCopiedScript(false), 2000);
-    } catch {
-      alert('Buka file google-apps-script/Code.gs di project untuk menyalin kodenya.');
-    }
+  const copySql = () => {
+    navigator.clipboard.writeText(supabase.SUPABASE_SQL_SETUP);
+    setCopiedSql(true);
+    setTimeout(() => setCopiedSql(false), 2500);
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-      <div className="bg-white border border-slate-200 w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in select-none">
+      <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-slate-100 flex flex-col max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-slate-900 flex items-center justify-center text-white">
-              <Cloud className="w-5 h-5" />
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+              <Database className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-900 leading-tight">Sinkronisasi Multi-Device (Cloud)</h3>
-              <p className="text-xs text-slate-500 font-medium">Google Drive & Google Sheets via Apps Script</p>
+              <h3 className="text-base font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+                <span>Supabase Cloud Sync</span>
+                {isCloudConnected && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">
+                    Aktif
+                  </span>
+                )}
+              </h3>
+              <p className="text-xs text-slate-500 font-medium">
+                Penyimpanan Database & CDN Streaming Audio
+              </p>
             </div>
           </div>
-
           <button
             onClick={() => setIsCloudModalOpen(false)}
-            className="p-2 rounded-full text-slate-400 hover:text-slate-900 hover:bg-slate-200/60 transition-colors"
+            className="p-2 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-200/50 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Content Body */}
-        <div className="p-6 overflow-y-auto space-y-5 flex-1 text-slate-800">
-          {/* Information Card */}
-          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
-              <Database className="w-4 h-4 text-slate-700" />
-              <span>Gratis & Tanpa Batas Penyimpanan Server</span>
+        {/* Content */}
+        <div className="p-6 overflow-y-auto space-y-5 flex-1">
+          {/* Quick Studio Action */}
+          <div className="p-4 rounded-2xl bg-slate-900 text-white flex items-center justify-between gap-3 shadow-md">
+            <div>
+              <h4 className="text-xs font-bold flex items-center gap-1.5 text-emerald-400">
+                <Sparkles className="w-4 h-4" />
+                Music Studio
+              </h4>
+              <p className="text-[11px] text-slate-300 font-medium mt-0.5">
+                Upload MP3 baru, auto-detect ID3 tag, & kelola koleksi Supabase
+              </p>
             </div>
-            <p className="text-xs text-slate-600 leading-relaxed font-medium">
-              Hubungkan URL Google Apps Script kamu agar lagu yang ada di HP atau Laptop
-              otomatis tersimpan di <strong>Google Drive pribadi kamu</strong> dan bisa diakses dari semua perangkat.
-            </p>
+            <button
+              onClick={() => {
+                setIsCloudModalOpen(false);
+                setIsStudioOpen(true);
+              }}
+              className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold flex items-center gap-1.5 transition-colors flex-shrink-0"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              <span>Buka Studio</span>
+            </button>
           </div>
 
-          {/* URL Input */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-              Google Apps Script Web App URL:
-            </label>
-            <div className="flex gap-2">
+          {/* Form Credentials */}
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-800 mb-1">
+                Supabase Project URL
+              </label>
               <input
                 type="url"
-                placeholder="https://script.google.com/macros/s/.../exec"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                className="flex-1 px-3.5 py-2.5 rounded-2xl bg-slate-100 border border-slate-200 text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:border-slate-400 transition-all font-mono"
+                value={supabaseUrl}
+                onChange={(e) => setSupabaseUrl(e.target.value)}
+                placeholder="https://xyzproject.supabase.co"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-900 focus:outline-none focus:border-slate-800 bg-slate-50 focus:bg-white transition-colors"
               />
-              <button
-                type="button"
-                onClick={handleTestConnection}
-                disabled={testStatus === 'testing'}
-                className="px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-xs font-bold transition-colors whitespace-nowrap"
-              >
-                {testStatus === 'testing' ? 'Mengetes...' : 'Tes Koneksi'}
-              </button>
             </div>
 
-            {/* Test Status Message */}
-            {testStatus === 'success' && (
-              <div className="flex items-center gap-2 text-xs text-emerald-600 font-bold mt-1">
-                <CheckCircle2 className="w-4 h-4" />
+            <div>
+              <label className="block text-xs font-bold text-slate-800 mb-1">
+                Supabase Anon / Public API Key
+              </label>
+              <input
+                type="password"
+                value={supabaseKey}
+                onChange={(e) => setSupabaseKey(e.target.value)}
+                placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-mono text-slate-900 focus:outline-none focus:border-slate-800 bg-slate-50 focus:bg-white transition-colors"
+              />
+            </div>
+
+            {/* Test Status Banner */}
+            {testStatus !== 'idle' && (
+              <div
+                className={`p-3.5 rounded-2xl flex items-start gap-2.5 text-xs font-medium ${
+                  testStatus === 'success'
+                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                    : testStatus === 'error'
+                    ? 'bg-rose-50 text-rose-800 border border-rose-200'
+                    : 'bg-indigo-50 text-indigo-800 border border-indigo-200'
+                }`}
+              >
+                {testStatus === 'success' && <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />}
+                {testStatus === 'error' && <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />}
+                {testStatus === 'testing' && <RefreshCw className="w-4 h-4 text-indigo-600 animate-spin flex-shrink-0 mt-0.5" />}
                 <span>{testMessage}</span>
               </div>
             )}
-            {testStatus === 'error' && (
-              <div className="flex items-center gap-2 text-xs text-rose-600 font-bold mt-1">
-                <AlertCircle className="w-4 h-4" />
-                <span>{testMessage}</span>
-              </div>
-            )}
+
+            <button
+              onClick={handleTestAndSave}
+              disabled={testStatus === 'testing'}
+              className="w-full py-3 rounded-2xl bg-slate-900 hover:bg-black text-white text-xs font-bold flex items-center justify-center gap-2 shadow-md transition-all disabled:opacity-50"
+            >
+              {testStatus === 'testing' ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <Check className="w-4 h-4" />
+              )}
+              <span>Simpan & Tes Koneksi Supabase</span>
+            </button>
           </div>
 
-          {/* MIGRATION SECTION (Upload local songs to cloud) */}
-          {localOnlySongs.length > 0 && (
-            <div className="p-4 rounded-2xl bg-indigo-50 border border-indigo-200 space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
-                    <UploadCloud className="w-4 h-4 text-indigo-600" />
-                    <span>Upload {localOnlySongs.length} Lagu Lokal ke Cloud</span>
-                  </h4>
-                  <p className="text-[11px] text-indigo-800 mt-0.5">
-                    Ada {localOnlySongs.length} lagu di perangkat ini yang belum tersimpan di Google Drive.
-                  </p>
-                </div>
-              </div>
-
-              {isMigrating ? (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-xs font-bold text-indigo-900">
-                    <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
-                    <span className="truncate">{migrationProgress.text}</span>
-                  </div>
-                  <div className="w-full bg-indigo-200 h-2 rounded-full overflow-hidden">
-                    <div
-                      className="bg-indigo-600 h-full transition-all duration-300 rounded-full"
-                      style={{
-                        width: `${(migrationProgress.current / Math.max(1, migrationProgress.total)) * 100}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              ) : migrationSuccess ? (
-                <div className="flex items-center gap-2 text-xs text-emerald-700 font-bold bg-emerald-100 p-2.5 rounded-xl">
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Semua lagu berhasil di-upload ke Google Drive! Sekarang buka HP dan klik Sinkronkan.</span>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleMigrateLocalSongs}
-                  disabled={!url.trim()}
-                  className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-sm"
-                >
-                  <UploadCloud className="w-4 h-4" />
-                  Unggah {localOnlySongs.length} Lagu ke Google Drive Sekarang
-                </button>
-              )}
+          {/* 1-Click SQL Setup Script */}
+          <div className="pt-2 border-t border-slate-100">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                <Database className="w-3.5 h-3.5 text-slate-600" />
+                SQL Setup Script (Tabel & Bucket Storage)
+              </span>
+              <button
+                onClick={copySql}
+                className="px-3 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex items-center gap-1.5 transition-colors"
+              >
+                {copiedSql ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Tersalin!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Salin SQL (1-Click)</span>
+                  </>
+                )}
+              </button>
             </div>
-          )}
-
-          {/* DOWNLOAD FOR OFFLINE SECTION (Download cloud songs to mobile memory) */}
-          {songs.filter((s) => !s.blob && s.driveFileId).length > 0 && (
-            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-3">
-              <div>
-                <h4 className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
-                  <DownloadCloud className="w-4 h-4 text-emerald-600" />
-                  <span>Unduh {songs.filter((s) => !s.blob && s.driveFileId).length} Lagu ke Memori HP</span>
-                </h4>
-                <p className="text-[11px] text-emerald-800 mt-0.5">
-                  Download semua lagu dari Google Drive ke HP agar bisa diputar 100% offline tanpa kuota.
-                </p>
-              </div>
-
-              {isDownloadingAll ? (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-xs font-bold text-emerald-900">
-                    <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
-                    <span className="truncate">{downloadProgress.text}</span>
-                  </div>
-                  <div className="w-full bg-emerald-200 h-2 rounded-full overflow-hidden">
-                    <div
-                      className="bg-emerald-600 h-full transition-all duration-300 rounded-full"
-                      style={{
-                        width: `${(downloadProgress.current / Math.max(1, downloadProgress.total)) * 100}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={downloadAllSongsForOffline}
-                  className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-sm"
-                >
-                  <Download className="w-4 h-4" />
-                  Unduh {songs.filter((s) => !s.blob && s.driveFileId).length} Lagu ke HP Sekarang
-                </button>
-              )}
-            </div>
-          )}
+            <pre className="p-3 bg-slate-900 text-slate-200 rounded-2xl text-[11px] font-mono overflow-x-auto max-h-36 border border-slate-800">
+              {supabase.SUPABASE_SQL_SETUP}
+            </pre>
+          </div>
 
           {/* Reset / Bersihkan Lagu Lama */}
-          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
+          <div className="p-4 rounded-2xl bg-red-50/70 border border-red-200/80 flex items-center justify-between gap-3">
             <div>
-              <h4 className="text-xs font-bold text-slate-900">Bersihkan Semua Lagu Lama</h4>
-              <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+              <h4 className="text-xs font-bold text-red-950">Bersihkan Semua Lagu Lama</h4>
+              <p className="text-[11px] text-red-800 font-medium mt-0.5">
                 Hapus seluruh cache lagu lama dari memori HP lokal untuk mulai fresh dengan Supabase.
               </p>
             </div>
@@ -342,98 +237,31 @@ export default function CloudSettingsModal() {
                   setIsCloudModalOpen(false);
                 }
               }}
-              className="px-3.5 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold flex items-center gap-1.5 transition-colors flex-shrink-0"
+              className="px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold flex items-center gap-1.5 transition-colors flex-shrink-0 shadow-sm"
             >
               <Trash2 className="w-3.5 h-3.5" />
               <span>Bersihkan</span>
             </button>
           </div>
-
-          {/* Instructions Accordion */}
-          <div className="border border-slate-200 rounded-2xl overflow-hidden">
-            <button
-              type="button"
-              onClick={() => setShowInstructions(!showInstructions)}
-              className="w-full px-4 py-3 bg-slate-50 hover:bg-slate-100 flex items-center justify-between text-xs font-bold text-slate-800 transition-colors"
-            >
-              <span className="flex items-center gap-2">
-                <HelpCircle className="w-4 h-4 text-slate-500" />
-                Panduan 1 Menit: Cara Membuat Google Apps Script
-              </span>
-              <span>{showInstructions ? '▲' : '▼'}</span>
-            </button>
-
-            {showInstructions && (
-              <div className="p-4 space-y-3 bg-white text-xs text-slate-600 font-medium leading-relaxed border-t border-slate-200">
-                <ol className="list-decimal pl-4 space-y-2">
-                  <li>
-                    Buka{' '}
-                    <a
-                      href="https://script.google.com/"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-indigo-600 font-bold underline inline-flex items-center gap-1"
-                    >
-                      script.google.com <ExternalLink className="w-3 h-3" />
-                    </a>{' '}
-                    lalu klik <strong>New Project</strong>.
-                  </li>
-                  <li>
-                    Salin script lengkap backend dengan tombol di bawah:
-                    <div className="mt-2">
-                      <button
-                        type="button"
-                        onClick={copyScriptCode}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 text-white font-bold text-xs shadow-sm hover:bg-black transition-colors"
-                      >
-                        {copiedScript ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                        {copiedScript ? 'Kode Disalin!' : 'Salin Kode Backend Code.gs'}
-                      </button>
-                    </div>
-                  </li>
-                  <li>Hapus kode bawaan di editor, lalu <strong>Paste</strong> kode yang baru disalin.</li>
-                  <li>
-                    Klik <strong>Deploy</strong> (kanan atas) ➔ <strong>New deployment</strong> ➔ Pilih tipe ⚙️ <strong>Web app</strong>.
-                  </li>
-                  <li>
-                    Atur:
-                    <ul className="list-disc pl-4 mt-1 space-y-0.5">
-                      <li><strong>Execute as:</strong> Me (email Google Anda)</li>
-                      <li><strong>Who has access:</strong> Anyone (Siapa saja)</li>
-                    </ul>
-                  </li>
-                  <li>Klik <strong>Deploy</strong>, izinkan akses akun (Authorize), lalu copy <strong>Web App URL</strong> dan paste di kolom atas!</li>
-                </ol>
-              </div>
-            )}
-          </div>
         </div>
 
-        {/* Footer Actions */}
+        {/* Footer */}
         <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between gap-3">
           <button
             onClick={() => syncWithCloud()}
-            disabled={isSyncing || !url}
+            disabled={isSyncing}
             className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-800 text-xs font-bold transition-colors"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
-            {isSyncing ? 'Menyinkronkan...' : 'Sinkronkan Sekarang'}
+            <span>{isSyncing ? 'Menyinkronkan...' : 'Sync Supabase'}</span>
           </button>
 
-          <div className="flex gap-2">
-            <button
-              onClick={() => setIsCloudModalOpen(false)}
-              className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-white text-slate-700 text-xs font-bold transition-colors"
-            >
-              Batal
-            </button>
-            <button
-              onClick={handleSave}
-              className="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold transition-all shadow-sm"
-            >
-              Simpan Pengaturan
-            </button>
-          </div>
+          <button
+            onClick={() => setIsCloudModalOpen(false)}
+            className="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold transition-all shadow-sm"
+          >
+            Tutup
+          </button>
         </div>
       </div>
     </div>

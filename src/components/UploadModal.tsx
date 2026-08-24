@@ -80,9 +80,9 @@ export default function UploadModal() {
       await db.saveSongsBatch(parsedSongs);
       await refreshSongs();
 
-      // 2. If Cloud Apps Script is configured, upload to Google Drive in background
+      // 2. If Supabase is configured, upload in background
       if (cloudApi.isCloudConfigured()) {
-        setProgressText('Mengunggah ke Google Drive & Cloud Database...');
+        setProgressText('Mengunggah ke Supabase CDN & Database...');
         for (let i = 0; i < parsedSongs.length; i++) {
           const song = parsedSongs[i];
           const fileBlob = selectedFiles[i] || song.blob;
@@ -91,11 +91,10 @@ export default function UploadModal() {
             try {
               const cloudSong = await cloudApi.uploadSongToCloud(song, fileBlob);
               if (cloudSong) {
-                // Update local song with cloud driveFileId & streamUrl
-                await db.saveSong({ ...song, driveFileId: cloudSong.driveFileId, streamUrl: cloudSong.streamUrl });
+                await db.saveSong({ ...song, streamUrl: cloudSong.streamUrl });
               }
             } catch (err) {
-              console.warn('Cloud upload skipped or failed for song:', song.title, err);
+              console.warn('Cloud upload note for song:', song.title, err);
             }
           }
         }

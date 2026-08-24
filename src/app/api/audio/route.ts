@@ -106,33 +106,6 @@ async function fetchFromDrive(fileId: string, rangeHeader: string | null, custom
     console.warn('Drive confirmation flow note:', err);
   }
 
-  // Stage 4: Google Apps Script Web App fallback
-  const gasEndpoint = customEndpoint || process.env.NEXT_PUBLIC_APPSCRIPT_URL;
-  if (gasEndpoint) {
-    try {
-      const gasRes = await fetch(`${gasEndpoint}?action=getAudio&fileId=${encodeURIComponent(fileId)}`, {
-        method: 'GET',
-      });
-      if (gasRes.ok) {
-        const gasData = await gasRes.json();
-        if (gasData.status === 'success' && gasData.base64) {
-          const cleanBase64 = gasData.base64.replace(/^data:[^;]+;base64,/, '');
-          const buffer = Buffer.from(cleanBase64, 'base64');
-          return new Response(buffer, {
-            status: 200,
-            headers: {
-              'Content-Type': gasData.mimeType || 'audio/mpeg',
-              'Content-Length': String(buffer.length),
-              'Accept-Ranges': 'bytes',
-            },
-          });
-        }
-      }
-    } catch (err) {
-      console.warn('Apps Script backend fallback note:', err);
-    }
-  }
-
   return null;
 }
 

@@ -398,15 +398,19 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
   // Download a single song for offline playback
   const downloadSongForOffline = useCallback(async (song: Song): Promise<boolean> => {
-    if (!song.driveFileId) return false;
+    const url = song.streamUrl || (song.driveFileId ? `/api/audio?fileId=${song.driveFileId}` : '');
+    if (!url) return false;
     try {
-      const blob = await cloudApi.fetchSongAudioBlob(song.driveFileId);
-      if (blob) {
-        const updated: Song = { ...song, blob };
-        await db.saveSong(updated);
-        setSongs((prev) => prev.map((s) => (s.id === song.id ? updated : s)));
-        updateStorageStats();
-        return true;
+      const res = await fetch(url);
+      if (res.ok) {
+        const blob = await res.blob();
+        if (blob && blob.size > 1000) {
+          const updated: Song = { ...song, blob };
+          await db.saveSong(updated);
+          setSongs((prev) => prev.map((s) => (s.id === song.id ? updated : s)));
+          updateStorageStats();
+          return true;
+        }
       }
     } catch (err) {
       console.error('Failed to download song for offline:', song.title, err);
@@ -419,7 +423,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     setIsDownloadingAll(true);
     try {
       const allDbSongs = await db.getAllSongs();
-      const needDownload = allDbSongs.filter((s) => !s.blob && s.driveFileId);
+      const needDownload = allDbSongs.filter((s) => !s.blob && (s.streamUrl || s.driveFileId));
       const total = needDownload.length;
 
       setDownloadProgress({ current: 0, total, text: `Mendownload ${total} lagu...` });
@@ -432,12 +436,20 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           text: `Mendownload (${i + 1}/${total}): ${song.title}...`,
         });
 
-        if (song.driveFileId) {
-          const blob = await cloudApi.fetchSongAudioBlob(song.driveFileId);
-          if (blob) {
-            const updated: Song = { ...song, blob };
-            await db.saveSong(updated);
-            setSongs((prev) => prev.map((s) => (s.id === song.id ? updated : s)));
+        const url = song.streamUrl || (song.driveFileId ? `/api/audio?fileId=${song.driveFileId}` : '');
+        if (url) {
+          try {
+            const res = await fetch(url);
+            if (res.ok) {
+              const blob = await res.blob();
+              if (blob && blob.size > 1000) {
+                const updated: Song = { ...song, blob };
+                await db.saveSong(updated);
+                setSongs((prev) => prev.map((s) => (s.id === song.id ? updated : s)));
+              }
+            }
+          } catch (e) {
+            console.warn('Offline download note for song:', song.title, e);
           }
         }
       }
@@ -445,12 +457,12 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       await refreshSongs();
     } catch (err) {
       console.error('Failed to download all songs:', err);
+      updateStorageStats();
     } finally {
       setIsDownloadingAll(false);
       setDownloadProgress({ current: 0, total: 0, text: '' });
-      updateStorageStats();
     }
-  }, []);
+  }, [refreshSongs]);
 
   // Cloud Synchronization Function
   const syncWithCloud = useCallback(async () => {
@@ -594,10 +606,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           setIsCaching(true);
           setCachingSongId(song.id);
 
-          const fetchPromise =
-            song.streamUrl && !song.streamUrl.includes('drive.google.com') && !song.streamUrl.includes('docs.google.com')
-              ? fetch(song.streamUrl).then((r) => r.blob())
-              : cloudApi.fetchSongAudioBlob(song.driveFileId || '');
+          const fetchPromise = song.streamUrl
+            ? fetch(song.streamUrl).then((r) => (r.ok ? r.blob() : null))
+            : Promise.resolve(null);
 
           fetchPromise
             .then(async (blob) => {

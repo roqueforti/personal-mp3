@@ -6,11 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "gas:login": "clasp login",
-    "gas:push": "clasp push",
-    "gas:deploy": "clasp deploy",
-    "gas:open": "clasp open"
+    "lint": "next lint"
   },
   "dependencies": {
     "@next/swc-wasm-nodejs": "^16.3.2",
@@ -24,8 +20,6 @@
     "tailwind-merge": "^2.5.4"
   },
   "devDependencies": {
-    "@google/clasp": "^2.4.2",
-    "@types/google-apps-script": "^1.0.87",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

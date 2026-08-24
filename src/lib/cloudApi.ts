@@ -1,306 +1,72 @@
 import { Song, Playlist } from '@/types/music';
 import * as supabase from './supabase';
 
-const APPSCRIPT_STORAGE_KEY = 'sonicvault_appscript_url';
-
-export function getAppScriptUrl(): string {
-  if (typeof window === 'undefined') return '';
-  const stored = localStorage.getItem(APPSCRIPT_STORAGE_KEY);
-  if (stored) return stored.trim();
-  return process.env.NEXT_PUBLIC_APPSCRIPT_URL || '';
-}
-
-export function setAppScriptUrl(url: string): void {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(APPSCRIPT_STORAGE_KEY, url.trim());
-}
-
 export function isCloudConfigured(): boolean {
-  if (supabase.isSupabaseConfigured()) return true;
-  const url = getAppScriptUrl();
-  return Boolean(url && url.startsWith('http'));
+  return supabase.isSupabaseConfigured();
 }
 
-export function getCloudProvider(): 'supabase' | 'appscript' | 'none' {
-  if (supabase.isSupabaseConfigured()) return 'supabase';
-  if (getAppScriptUrl()) return 'appscript';
-  return 'none';
+export function getCloudProvider(): 'supabase' | 'none' {
+  return supabase.isSupabaseConfigured() ? 'supabase' : 'none';
 }
 
-// Convert File / Blob to Base64 String
-export function fileToBase64(file: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = (error) => reject(error);
-  });
-}
-
-// Convert base64 data to Blob
-export function base64ToBlob(base64: string, mimeType = 'audio/mpeg'): Blob {
-  const cleanBase64 = base64.replace(/^data:[^;]+;base64,/, '');
-  const byteCharacters = atob(cleanBase64);
-  const byteNumbers = new Uint8Array(byteCharacters.length);
-  for (let i = 0; i < byteCharacters.length; i++) {
-    byteNumbers[i] = byteCharacters.charCodeAt(i);
-  }
-  return new Blob([byteNumbers], { type: mimeType });
-}
-
-// ----------------- Cloud Endpoints ----------------- //
-
-export async function pingCloud(url?: string): Promise<{ success: boolean; message: string }> {
-  if (supabase.isSupabaseConfigured()) {
-    return await supabase.pingSupabase();
-  }
-
-  const endpoint = url || getAppScriptUrl();
-  if (!endpoint) return { success: false, message: 'URL Cloud / Apps Script belum diisi' };
-
-  try {
-    const res = await fetch(`${endpoint}?action=ping`, { method: 'GET' });
-    const data = await res.json();
-    if (data.status === 'ok') {
-      return { success: true, message: data.message || 'Koneksi Berhasil!' };
-    }
-    return { success: false, message: data.message || 'Respons tidak dikenali' };
-  } catch (err: any) {
-    return { success: false, message: 'Gagal terhubung: ' + (err.message || String(err)) };
-  }
+export async function pingCloud(): Promise<{ success: boolean; message: string }> {
+  return await supabase.pingSupabase();
 }
 
 export async function fetchCloudSongs(): Promise<Song[]> {
-  // 1. Try Supabase
   if (supabase.isSupabaseConfigured()) {
     return await supabase.fetchSongsFromSupabase();
   }
-
-  // 2. Try Apps Script
-  const endpoint = getAppScriptUrl();
-  if (!endpoint) return [];
-
-  try {
-    const res = await fetch(`${endpoint}?action=getSongs`, { method: 'GET' });
-    const data = await res.json();
-    if (data.status === 'success' && Array.isArray(data.songs)) {
-      return data.songs;
-    }
-    return [];
-  } catch (err) {
-    console.error('Error fetching cloud songs:', err);
-    return [];
-  }
+  return [];
 }
 
 export async function fetchCloudPlaylists(): Promise<Playlist[]> {
   if (supabase.isSupabaseConfigured()) {
     return await supabase.fetchPlaylistsFromSupabase();
   }
-
-  const endpoint = getAppScriptUrl();
-  if (!endpoint) return [];
-
-  try {
-    const res = await fetch(`${endpoint}?action=getPlaylists`, { method: 'GET' });
-    const data = await res.json();
-    if (data.status === 'success' && Array.isArray(data.playlists)) {
-      return data.playlists;
-    }
-    return [];
-  } catch (err) {
-    console.error('Error fetching cloud playlists:', err);
-    return [];
-  }
+  return [];
 }
 
 export function getAudioStreamUrl(song: Song): string {
-  // 1. Direct Supabase CDN or public HTTP streaming URL
-  if (song.streamUrl && !song.streamUrl.includes('drive.google.com') && !song.streamUrl.includes('docs.google.com')) {
-    return song.streamUrl;
-  }
-
-  // 2. Google Drive stream proxy
-  const appScriptUrl = getAppScriptUrl();
-  const endpointParam = appScriptUrl ? `&endpoint=${encodeURIComponent(appScriptUrl)}` : '';
-
-  if (song.driveFileId) {
-    return `/api/audio?fileId=${encodeURIComponent(song.driveFileId)}${endpointParam}`;
-  }
   if (song.streamUrl) {
-    const match = song.streamUrl.match(/id=([a-zA-Z0-9_-]+)/);
-    if (match) {
-      return `/api/audio?fileId=${encodeURIComponent(match[1])}${endpointParam}`;
-    }
-    return `/api/audio?url=${encodeURIComponent(song.streamUrl)}`;
+    return song.streamUrl;
   }
   return '';
 }
 
-export async function fetchSongAudioBlob(driveFileId: string): Promise<Blob | null> {
-  if (!driveFileId) return null;
+export async function uploadSongToCloud(song: Song, audioBlob: Blob): Promise<Song | null> {
+  const audioResult = await supabase.uploadAudioToSupabase(audioBlob, `${song.title}.mp3`);
+  if (!audioResult) return null;
 
-  const endpoint = getAppScriptUrl();
-  const endpointParam = endpoint ? `&endpoint=${encodeURIComponent(endpoint)}` : '';
+  const uploadedSong: Song = {
+    ...song,
+    streamUrl: audioResult.url,
+    fileSize: audioResult.size,
+  };
 
-  // 1. Primary: Fetch through Next.js same-origin API proxy (bypasses browser CORS & handles Google Drive streaming)
-  try {
-    const res = await fetch(`/api/audio?fileId=${encodeURIComponent(driveFileId)}${endpointParam}`);
-    if (res.ok) {
-      const contentType = res.headers.get('content-type') || '';
-      if (!contentType.includes('text/html') && !contentType.includes('application/json')) {
-        const blob = await res.blob();
-        if (blob && blob.size > 5000) {
-          return blob;
-        }
-      }
-    }
-  } catch (err) {
-    console.warn('Local proxy /api/audio fetch error, attempting Apps Script fallback...', err);
-  }
+  const saved = await supabase.saveSongToSupabase(uploadedSong);
+  if (!saved) return null;
 
-  // 2. Secondary: Fetch through Google Apps Script endpoint
-  if (endpoint) {
-    try {
-      const res = await fetch(`${endpoint}?action=getAudio&fileId=${encodeURIComponent(driveFileId)}`, { method: 'GET' });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.status === 'success' && data.base64) {
-          const blob = base64ToBlob(data.base64, data.mimeType || 'audio/mpeg');
-          if (blob.size > 1000) {
-            return blob;
-          }
-        }
-      }
-    } catch (err) {
-      console.warn('Apps Script getAudio fetch failed, trying direct Google Drive links...', err);
-    }
-  }
-
-  // 3. Tertiary: Try direct public Google Drive URLs
-  const directUrls = [
-    `https://drive.usercontent.google.com/download?id=${driveFileId}&export=download&authuser=0`,
-    `https://lh3.googleusercontent.com/d/${driveFileId}`,
-    `https://drive.google.com/uc?export=download&id=${driveFileId}`,
-    `https://docs.google.com/uc?export=download&id=${driveFileId}`
-  ];
-
-  for (const dUrl of directUrls) {
-    try {
-      const res = await fetch(dUrl);
-      if (res.ok) {
-        const blob = await res.blob();
-        if (blob && blob.size > 5000) {
-          return blob;
-        }
-      }
-    } catch {}
-  }
-
-  return null;
-}
-
-export async function uploadSongToCloud(song: Song, fileBlob: Blob): Promise<Song | null> {
-  const endpoint = getAppScriptUrl();
-  if (!endpoint) return null;
-
-  try {
-    const base64Data = await fileToBase64(fileBlob);
-    
-    const payload = {
-      action: 'uploadSong',
-      id: song.id,
-      title: song.title,
-      artist: song.artist,
-      album: song.album,
-      duration: song.duration,
-      fileSize: song.fileSize,
-      mimeType: song.mimeType || 'audio/mpeg',
-      coverArt: song.coverArt || '',
-      base64Data: base64Data,
-      filename: `${song.title}.mp3`,
-    };
-
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
-
-    const data = await res.json();
-    if (data.status === 'success' && data.song) {
-      return data.song;
-    }
-    return null;
-  } catch (err) {
-    console.error('Error uploading song to Apps Script cloud:', err);
-    return null;
-  }
+  return uploadedSong;
 }
 
 export async function deleteSongFromCloud(songId: string): Promise<boolean> {
-  const endpoint = getAppScriptUrl();
-  if (!endpoint) return false;
-
-  try {
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'deleteSong', songId }),
-    });
-    const data = await res.json();
-    return data.status === 'success';
-  } catch (err) {
-    console.error('Error deleting song from cloud:', err);
-    return false;
+  const songs = await supabase.fetchSongsFromSupabase();
+  const target = songs.find((s) => s.id === songId);
+  if (target) {
+    return await supabase.deleteSongFromSupabase(target);
   }
+  return true;
 }
 
-export async function toggleCloudFavorite(songId: string): Promise<boolean> {
-  const endpoint = getAppScriptUrl();
-  if (!endpoint) return false;
-
-  try {
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'toggleFavorite', songId }),
-    });
-    const data = await res.json();
-    return Boolean(data.isFavorite);
-  } catch (err) {
-    console.error('Error toggling cloud favorite:', err);
-    return false;
-  }
+export async function toggleCloudFavorite(songId: string, isFav = true): Promise<boolean> {
+  return await supabase.toggleFavoriteInSupabase(songId, isFav);
 }
 
-export async function savePlaylistToCloud(playlist: Playlist): Promise<boolean> {
-  const endpoint = getAppScriptUrl();
-  if (!endpoint) return false;
-
-  try {
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'savePlaylist', playlist }),
-    });
-    const data = await res.json();
-    return data.status === 'success';
-  } catch (err) {
-    console.error('Error saving playlist to cloud:', err);
-    return false;
-  }
+export async function saveCloudPlaylist(playlist: Playlist): Promise<boolean> {
+  return await supabase.savePlaylistToSupabase(playlist);
 }
 
-export async function deletePlaylistFromCloud(playlistId: string): Promise<boolean> {
-  const endpoint = getAppScriptUrl();
-  if (!endpoint) return false;
-
-  try {
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'deletePlaylist', playlistId }),
-    });
-    const data = await res.json();
-    return data.status === 'success';
-  } catch (err) {
-    console.error('Error deleting playlist from cloud:', err);
-    return false;
-  }
+export async function deleteCloudPlaylist(playlistId: string): Promise<boolean> {
+  return await supabase.deletePlaylistFromSupabase(playlistId);
 }
