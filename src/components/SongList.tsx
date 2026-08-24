@@ -22,6 +22,9 @@ import {
   Search,
   ListMusic,
   Disc,
+  CheckCircle2,
+  Cloud,
+  Loader2,
 } from 'lucide-react';
 
 interface SongListProps {
@@ -34,6 +37,8 @@ export default function SongList({ currentTab = 'home' }: SongListProps) {
     filteredSongs,
     currentSong,
     isPlaying,
+    isCaching,
+    cachingSongId,
     playSong,
     togglePlay,
     setIsUploadOpen,
@@ -222,16 +227,33 @@ export default function SongList({ currentTab = 'home' }: SongListProps) {
                         )}
                       </div>
 
-                      {/* Title & Artist */}
+                      {/* Title & Artist & Streaming / Offline Badge */}
                       <div className="min-w-0 flex-1 pr-2">
                         <h4 className={`text-xs font-extrabold truncate leading-snug ${
                           isCurrent ? 'text-slate-900' : 'text-slate-800'
                         }`}>
                           {song.title}
                         </h4>
-                        <p className="text-[11px] text-slate-400 font-medium truncate mt-0.5">
-                          {song.artist}
-                        </p>
+                        <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
+                          <p className="text-[11px] text-slate-400 font-medium truncate">
+                            {song.artist}
+                          </p>
+                          {song.blob ? (
+                            <span className="inline-flex items-center gap-0.5 text-[10px] text-emerald-600 font-bold bg-emerald-50/90 px-1 py-0.2 rounded flex-shrink-0" title="Tersimpan di HP (Bisa Putar Offline)">
+                              <CheckCircle2 className="w-2.5 h-2.5 text-emerald-500" />
+                              Offline
+                            </span>
+                          ) : isCaching && cachingSongId === song.id ? (
+                            <span className="inline-flex items-center gap-0.5 text-[10px] text-amber-600 font-bold bg-amber-50/90 px-1 py-0.2 rounded flex-shrink-0 animate-pulse" title="Sedang streaming & mengunduh ke offline">
+                              <Loader2 className="w-2.5 h-2.5 text-amber-500 animate-spin" />
+                              Menyimpan...
+                            </span>
+                          ) : song.driveFileId ? (
+                            <span className="inline-flex items-center gap-0.5 text-[10px] text-slate-400 font-medium flex-shrink-0" title="Cloud Stream dari Google Drive">
+                              <Cloud className="w-2.5 h-2.5 text-slate-400" />
+                            </span>
+                          ) : null}
+                        </div>
                       </div>
                     </div>
 

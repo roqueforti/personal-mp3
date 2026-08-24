@@ -59,6 +59,10 @@ interface AudioContextType {
   repeatMode: RepeatMode;
   isShuffle: boolean;
   isLoadingAudio: boolean;
+  bufferedTime: number;
+  bufferedPercentage: number;
+  isCaching: boolean;
+  cachingSongId: string | null;
   queue: Song[];
 
   // Actions
@@ -132,6 +136,10 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [repeatMode, setRepeatMode] = useState<RepeatMode>('all');
   const [isShuffle, setIsShuffle] = useState<boolean>(false);
   const [isLoadingAudio, setIsLoadingAudio] = useState<boolean>(false);
+  const [bufferedTime, setBufferedTime] = useState<number>(0);
+  const [bufferedPercentage, setBufferedPercentage] = useState<number>(0);
+  const [isCaching, setIsCaching] = useState<boolean>(false);
+  const [cachingSongId, setCachingSongId] = useState<string | null>(null);
 
   // Search & Navigation
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -248,6 +256,26 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       setIsLoadingAudio(false);
     };
 
+    const onProgress = () => {
+      if (audio.buffered.length > 0) {
+        let cur = audio.currentTime;
+        let end = 0;
+        for (let i = 0; i < audio.buffered.length; i++) {
+          if (audio.buffered.start(i) <= cur && cur <= audio.buffered.end(i)) {
+            end = audio.buffered.end(i);
+            break;
+          }
+        }
+        if (end === 0 && audio.buffered.length > 0) {
+          end = audio.buffered.end(audio.buffered.length - 1);
+        }
+        setBufferedTime(end);
+        if (audio.duration > 0) {
+          setBufferedPercentage(Math.min(100, Math.max(0, (end / audio.duration) * 100)));
+        }
+      }
+    };
+
     audio.addEventListener('play', onPlay);
     audio.addEventListener('pause', onPause);
     audio.addEventListener('timeupdate', onTimeUpdate);
@@ -255,6 +283,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     audio.addEventListener('ended', onEnded);
     audio.addEventListener('waiting', () => setIsLoadingAudio(true));
     audio.addEventListener('playing', () => setIsLoadingAudio(false));
+    audio.addEventListener('progress', onProgress);
     audio.addEventListener('error', onError);
 
     return () => {
@@ -263,6 +292,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       audio.removeEventListener('timeupdate', onTimeUpdate);
       audio.removeEventListener('loadedmetadata', onLoadedMetadata);
       audio.removeEventListener('ended', onEnded);
+      audio.removeEventListener('progress', onProgress);
       audio.removeEventListener('error', onError);
       if (activeBlobUrlRef.current) {
         URL.revokeObjectURL(activeBlobUrlRef.current);
@@ -529,14 +559,22 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         const objectUrl = URL.createObjectURL(audioBlob);
         activeBlobUrlRef.current = objectUrl;
         audioSrc = objectUrl;
+        setBufferedPercentage(100);
+        setIsCaching(false);
+        setCachingSongId(null);
       } else {
         // Instant streaming playback via Next.js proxy / Drive stream
         const streamUrl = cloudApi.getAudioStreamUrl(song);
         if (streamUrl) {
           audioSrc = streamUrl;
+          setBufferedPercentage(0);
+          setBufferedTime(0);
 
-          // Asynchronously download blob in the background for offline capability
+          // Asynchronously download & cache blob in background for offline use
           if (song.driveFileId) {
+            setIsCaching(true);
+            setCachingSongId(song.id);
+
             cloudApi
               .fetchSongAudioBlob(song.driveFileId)
               .then(async (blob) => {
@@ -544,11 +582,16 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
                   const updated: Song = { ...song, blob };
                   await db.saveSong(updated);
                   setSongs((prev) => prev.map((s) => (s.id === song.id ? updated : s)));
+                  setCurrentSong((cur) => (cur?.id === song.id ? updated : cur));
                   updateStorageStats();
                 }
               })
               .catch((err) => {
                 console.warn('Background caching note:', err);
+              })
+              .finally(() => {
+                setIsCaching(false);
+                setCachingSongId((cur) => (cur === song.id ? null : cur));
               });
           }
         }
@@ -864,6 +907,10 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         repeatMode,
         isShuffle,
         isLoadingAudio,
+        bufferedTime,
+        bufferedPercentage,
+        isCaching,
+        cachingSongId,
         queue,
         playSong,
         togglePlay,

@@ -22,6 +22,10 @@ import {
   Music,
   Disc3,
   X,
+  CheckCircle2,
+  Cloud,
+  Loader2,
+  DownloadCloud,
 } from 'lucide-react';
 
 export default function NowPlayingModal() {
@@ -33,6 +37,10 @@ export default function NowPlayingModal() {
     repeatMode,
     isShuffle,
     playbackRate,
+    isLoadingAudio,
+    bufferedPercentage,
+    isCaching,
+    cachingSongId,
     queue,
     playSong,
     togglePlay,
@@ -285,28 +293,82 @@ export default function NowPlayingModal() {
             </div>
 
             {/* Title & Artist */}
-            <div className="text-center px-4 mt-1 mb-2">
+            <div className="text-center px-4 mt-1 mb-2 space-y-1.5">
               <h1 className="text-2xl font-bold text-slate-900 tracking-tight truncate leading-snug">
                 {currentSong.title}
               </h1>
-              <p className="text-sm font-medium text-slate-500 truncate mt-0.5">
+              <p className="text-sm font-medium text-slate-500 truncate">
                 {currentSong.artist}
               </p>
+
+              {/* Streaming & Auto-Cache Status Badge */}
+              <div className="pt-1 flex items-center justify-center">
+                {currentSong.blob ? (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-700 text-[11px] font-bold shadow-xs">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    Tersimpan di HP (Offline Ready)
+                  </span>
+                ) : isCaching && cachingSongId === currentSong.id ? (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-200/80 text-amber-800 text-[11px] font-bold shadow-xs animate-pulse">
+                    <Loader2 className="w-3.5 h-3.5 text-amber-600 animate-spin" />
+                    Streaming & Menyimpan Otomatis...
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 border border-slate-200/80 text-slate-600 text-[11px] font-bold shadow-xs">
+                    <Cloud className="w-3.5 h-3.5 text-slate-500" />
+                    Cloud Streaming
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         )}
 
-        {/* Seekbar and Timing */}
-        <div className="w-full px-2 mt-4">
-          <input
-            type="range"
-            min={0}
-            max={duration || 100}
-            value={currentTime}
-            onChange={(e) => seek(parseFloat(e.target.value))}
-            className="w-full"
-          />
-          <div className="flex justify-between text-xs font-semibold text-slate-500 mt-1.5">
+        {/* Dual-Layer Buffered Seekbar and Timing */}
+        <div className="w-full px-2 mt-4 space-y-2">
+          {(() => {
+            const playedPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
+            const bufferedPercent = Math.min(100, Math.max(playedPercent, bufferedPercentage));
+
+            return (
+              <div className="relative w-full h-4 flex items-center group cursor-pointer">
+                {/* Background Rail */}
+                <div className="absolute inset-x-0 h-1.5 bg-slate-200/80 rounded-full overflow-hidden">
+                  {/* Buffered Progress Bar (Gray) */}
+                  <div
+                    className="h-full bg-slate-300 rounded-full transition-all duration-300 ease-out"
+                    style={{ width: `${bufferedPercent}%` }}
+                  />
+                </div>
+
+                {/* Played Progress Bar (Black) */}
+                <div
+                  className="absolute left-0 h-1.5 bg-slate-900 rounded-full pointer-events-none transition-all duration-75"
+                  style={{ width: `${playedPercent}%` }}
+                />
+
+                {/* Native Range Input for Interaction */}
+                <input
+                  type="range"
+                  min={0}
+                  max={duration || 100}
+                  value={currentTime}
+                  onChange={(e) => seek(parseFloat(e.target.value))}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                />
+
+                {/* Scrubber Thumb */}
+                <div
+                  className="absolute w-3.5 h-3.5 bg-slate-900 border-2 border-white rounded-full shadow-md pointer-events-none transition-transform group-hover:scale-125"
+                  style={{
+                    left: `calc(${playedPercent}% - 7px)`,
+                  }}
+                />
+              </div>
+            );
+          })()}
+
+          <div className="flex justify-between text-xs font-semibold text-slate-500">
             <span>{formatTime(currentTime)}</span>
             <span>{formattedRemaining}</span>
           </div>
@@ -339,10 +401,13 @@ export default function NowPlayingModal() {
           {/* Big Solid Circular Play/Pause */}
           <button
             onClick={togglePlay}
+            disabled={isLoadingAudio}
             className="w-16 h-16 rounded-full bg-slate-900 text-white flex items-center justify-center shadow-lg active:scale-95 transition-transform"
             title={isPlaying ? 'Jeda' : 'Putar'}
           >
-            {isPlaying ? (
+            {isLoadingAudio ? (
+              <Loader2 className="w-7 h-7 animate-spin text-white" />
+            ) : isPlaying ? (
               <Pause className="w-7 h-7 fill-white" />
             ) : (
               <Play className="w-7 h-7 fill-white ml-0.5" />
