@@ -79,18 +79,18 @@ export default function CloudSettingsModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-white text-slate-900 flex flex-col pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)] animate-in slide-in-from-right duration-200 select-none max-w-lg mx-auto border-x border-slate-100 shadow-2xl">
+    <div className="fixed inset-0 z-50 bg-white text-slate-900 flex flex-col pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)] animate-slide-up select-none max-w-lg mx-auto border-x border-slate-100 shadow-2xl">
       {/* Native Mobile Header */}
       <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/90 backdrop-blur-md sticky top-0 z-10 flex-shrink-0">
         <div className="flex items-center gap-3">
           <button
             onClick={() => setIsCloudModalOpen(false)}
-            className="p-2 -ml-2 rounded-full text-slate-800 hover:bg-slate-200/50 transition-colors"
+            className="p-2 -ml-2 rounded-full text-slate-800 hover:bg-slate-200/50 active:scale-90 transition-transform"
             title="Kembali"
           >
             <ArrowLeft className="w-5 h-5 stroke-[2.5]" />
           </button>
-          <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shadow-2xs">
             <Database className="w-4 h-4" />
           </div>
           <div>
@@ -110,7 +110,7 @@ export default function CloudSettingsModal() {
 
         <button
           onClick={() => setIsCloudModalOpen(false)}
-          className="p-2 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-200/50 transition-colors"
+          className="p-2 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-200/50 active:scale-90 transition-transform"
         >
           <X className="w-5 h-5" />
         </button>

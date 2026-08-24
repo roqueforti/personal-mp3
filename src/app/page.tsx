@@ -69,7 +69,7 @@ export default function HomePage() {
       <PWAUpdateToast />
 
       {/* Main Content Area */}
-      <section className="flex-1 w-full overflow-x-hidden">
+      <section className="flex-1 w-full">
         <SongList currentTab={currentTab} />
       </section>
 

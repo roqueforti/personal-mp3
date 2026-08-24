@@ -23,21 +23,30 @@ export default function EqualizerModal() {
 
   if (!isEqualizerOpen) return null;
 
+  const triggerHaptic = (ms = 10) => {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(ms);
+    }
+  };
+
   const presets = Object.keys(EQUALIZER_PRESETS) as EqualizerPresetName[];
 
   return (
-    <div className="fixed inset-0 z-50 bg-white text-slate-900 flex flex-col pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)] animate-in slide-in-from-right duration-200 select-none max-w-lg mx-auto border-x border-slate-100 shadow-2xl">
+    <div className="fixed inset-0 z-50 bg-white text-slate-900 flex flex-col pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)] animate-slide-up select-none max-w-lg mx-auto border-x border-slate-100 shadow-2xl">
       {/* Native Mobile Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50/90 backdrop-blur-md sticky top-0 z-10 flex-shrink-0">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setIsEqualizerOpen(false)}
-            className="p-2 -ml-2 rounded-full text-slate-800 hover:bg-slate-200/50 transition-colors"
+            onClick={() => {
+              triggerHaptic(5);
+              setIsEqualizerOpen(false);
+            }}
+            className="p-2 -ml-2 rounded-full text-slate-800 hover:bg-slate-200/50 active:scale-90 transition-transform"
             title="Kembali"
           >
             <ArrowLeft className="w-5 h-5 stroke-[2.5]" />
           </button>
-          <div className="w-8 h-8 rounded-xl bg-slate-900 flex items-center justify-center text-white">
+          <div className="w-8 h-8 rounded-xl bg-slate-900 flex items-center justify-center text-white shadow-2xs">
             <Sliders className="w-4 h-4" />
           </div>
           <div>
@@ -47,8 +56,11 @@ export default function EqualizerModal() {
         </div>
 
         <button
-          onClick={() => setIsEqualizerOpen(false)}
-          className="p-2 rounded-full text-slate-400 hover:text-slate-900 hover:bg-slate-200/60 transition-colors"
+          onClick={() => {
+            triggerHaptic(5);
+            setIsEqualizerOpen(false);
+          }}
+          className="p-2 rounded-full text-slate-400 hover:text-slate-900 hover:bg-slate-200/60 active:scale-90 transition-transform"
         >
           <X className="w-5 h-5" />
         </button>
@@ -61,8 +73,11 @@ export default function EqualizerModal() {
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Preset Audio</span>
             <button
-              onClick={() => setEqPreset('Flat')}
-              className="flex items-center gap-1 text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors"
+              onClick={() => {
+                triggerHaptic(10);
+                setEqPreset('Flat');
+              }}
+              className="flex items-center gap-1 text-xs font-bold text-slate-600 hover:text-slate-900 active:scale-95 transition-transform"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               Reset Flat
@@ -73,10 +88,13 @@ export default function EqualizerModal() {
             {presets.map((name) => (
               <button
                 key={name}
-                onClick={() => setEqPreset(name)}
-                className={`py-2 px-1 text-xs font-bold rounded-xl border text-center transition-all ${
+                onClick={() => {
+                  triggerHaptic(10);
+                  setEqPreset(name);
+                }}
+                className={`py-2 px-1 text-xs font-bold rounded-xl border text-center transition-all active:scale-95 ${
                   eqPreset === name
-                    ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                    ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
                     : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
                 }`}
               >
@@ -87,7 +105,7 @@ export default function EqualizerModal() {
         </div>
 
         {/* 5-Band Sliders */}
-        <div className="bg-slate-50 p-4 rounded-3xl border border-slate-200 overflow-hidden">
+        <div className="bg-slate-50 p-4 rounded-3xl border border-slate-200 overflow-hidden shadow-2xs">
           <div className="flex justify-between items-center mb-3 px-1">
             <span className="text-[11px] font-mono font-bold text-slate-500">+12 dB</span>
             <span className="text-[11px] font-mono font-bold text-slate-400">0 dB</span>

@@ -99,7 +99,7 @@ export default function SongList({ currentTab = 'home' }: SongListProps) {
   }, [filteredSongs, activeTabFilter]);
 
   return (
-    <div className="max-w-md mx-auto px-4 pt-2 pb-[calc(12rem+env(safe-area-inset-bottom,0px))] space-y-5 select-none">
+    <div className="max-w-md mx-auto px-4 pt-2 pb-[calc(12rem+env(safe-area-inset-bottom,0px))] space-y-5">
       {/* PWA Install Banner at Top */}
       <PWAInstallBanner />
 

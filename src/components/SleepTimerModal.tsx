@@ -24,19 +24,28 @@ export default function SleepTimerModal() {
 
   if (!isSleepTimerOpen) return null;
 
+  const triggerHaptic = (ms = 10) => {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(ms);
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 bg-white text-slate-900 flex flex-col pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)] animate-in slide-in-from-right duration-200 select-none max-w-lg mx-auto border-x border-slate-100 shadow-2xl">
+    <div className="fixed inset-0 z-50 bg-white text-slate-900 flex flex-col pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)] animate-slide-up select-none max-w-lg mx-auto border-x border-slate-100 shadow-2xl">
       {/* Native Mobile Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50/90 backdrop-blur-md sticky top-0 z-10 flex-shrink-0">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setIsSleepTimerOpen(false)}
-            className="p-2 -ml-2 rounded-full text-slate-800 hover:bg-slate-200/50 transition-colors"
+            onClick={() => {
+              triggerHaptic(5);
+              setIsSleepTimerOpen(false);
+            }}
+            className="p-2 -ml-2 rounded-full text-slate-800 hover:bg-slate-200/50 active:scale-90 transition-transform"
             title="Kembali"
           >
             <ArrowLeft className="w-5 h-5 stroke-[2.5]" />
           </button>
-          <div className="w-8 h-8 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center text-amber-600">
+          <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-200/60 flex items-center justify-center text-amber-600 shadow-2xs">
             <Moon className="w-4 h-4" />
           </div>
           <div>
@@ -46,8 +55,11 @@ export default function SleepTimerModal() {
         </div>
 
         <button
-          onClick={() => setIsSleepTimerOpen(false)}
-          className="p-2 rounded-full text-slate-400 hover:text-slate-900 hover:bg-slate-200/60 transition-colors"
+          onClick={() => {
+            triggerHaptic(5);
+            setIsSleepTimerOpen(false);
+          }}
+          className="p-2 rounded-full text-slate-400 hover:text-slate-900 hover:bg-slate-200/60 active:scale-90 transition-transform"
         >
           <X className="w-5 h-5" />
         </button>
@@ -57,7 +69,7 @@ export default function SleepTimerModal() {
       <div className="p-5 space-y-4 flex-1 overflow-y-auto pb-24">
         {/* Active Timer Banner */}
         {sleepTimer.active ? (
-          <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-between">
+          <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-between shadow-2xs">
             <div className="flex items-center gap-3">
               <Clock className="w-5 h-5 text-amber-600 animate-pulse" />
               <div>
@@ -71,16 +83,19 @@ export default function SleepTimerModal() {
             </div>
 
             <button
-              onClick={cancelSleepTimer}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700 text-xs font-bold transition-colors"
+              onClick={() => {
+                triggerHaptic(15);
+                cancelSleepTimer();
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700 text-xs font-bold active:scale-95 transition-transform"
             >
               <StopCircle className="w-4 h-4" />
               Matikan
             </button>
           </div>
         ) : (
-          <p className="text-xs text-slate-500 font-medium">
-            Pilih berapa lama musik akan diputar sebelum berhenti otomatis dengan efek fade out:
+          <p className="text-xs text-slate-500 font-medium px-1">
+            Pilih durasi musik diputar sebelum audio berhenti otomatis:
           </p>
         )}
 
@@ -90,10 +105,11 @@ export default function SleepTimerModal() {
             <button
               key={opt.minutes}
               onClick={() => {
+                triggerHaptic(10);
                 startSleepTimer(opt.minutes);
                 setIsSleepTimerOpen(false);
               }}
-              className="w-full flex items-center justify-between p-4 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 transition-all text-xs font-bold"
+              className="w-full flex items-center justify-between p-4 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 active:scale-[0.98] transition-all text-xs font-bold shadow-2xs"
             >
               <span className="flex items-center gap-2.5">
                 <Clock className="w-4 h-4 text-slate-500" />
@@ -108,10 +124,11 @@ export default function SleepTimerModal() {
           {/* End of Current Track Option */}
           <button
             onClick={() => {
+              triggerHaptic(10);
               startSleepTimer(0, true);
               setIsSleepTimerOpen(false);
             }}
-            className="w-full flex items-center justify-between p-4 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 transition-all text-xs font-bold"
+            className="w-full flex items-center justify-between p-4 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 active:scale-[0.98] transition-all text-xs font-bold shadow-2xs"
           >
             <span className="flex items-center gap-2.5">
               <Disc className="w-4 h-4 text-slate-700" />

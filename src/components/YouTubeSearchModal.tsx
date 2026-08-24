@@ -204,18 +204,18 @@ export default function YouTubeSearchModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-white text-slate-900 flex flex-col pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)] animate-in slide-in-from-right duration-200 select-none max-w-lg mx-auto border-x border-slate-100 shadow-2xl">
+    <div className="fixed inset-0 z-50 bg-white text-slate-900 flex flex-col pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)] animate-slide-up select-none max-w-lg mx-auto border-x border-slate-100 shadow-2xl">
       {/* Native Mobile Header */}
       <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-white/95 backdrop-blur-md sticky top-0 z-10">
         <div className="flex items-center gap-3">
           <button
             onClick={() => setIsYouTubeSearchOpen(false)}
-            className="p-2 -ml-2 rounded-full text-slate-800 hover:bg-slate-100 transition-colors"
+            className="p-2 -ml-2 rounded-full text-slate-800 hover:bg-slate-100 active:scale-90 transition-transform"
             title="Kembali"
           >
             <ArrowLeft className="w-5 h-5 stroke-[2.5]" />
           </button>
-          <div className="w-8 h-8 rounded-xl bg-red-600/10 text-red-600 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-xl bg-red-600/10 text-red-600 flex items-center justify-center shadow-2xs">
             <Youtube className="w-4 h-4" />
           </div>
           <div>
@@ -234,7 +234,7 @@ export default function YouTubeSearchModal() {
         <div className="flex items-center gap-1">
           <button
             onClick={() => setShowKeyConfig(!showKeyConfig)}
-            className={`p-2 rounded-full transition-colors ${
+            className={`p-2 rounded-full active:scale-90 transition-transform ${
               showKeyConfig || savedApiKey
                 ? 'text-red-600 bg-red-50'
                 : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'
@@ -245,7 +245,7 @@ export default function YouTubeSearchModal() {
           </button>
           <button
             onClick={() => setIsYouTubeSearchOpen(false)}
-            className="p-2 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 transition-colors"
+            className="p-2 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 active:scale-90 transition-transform"
           >
             <X className="w-5 h-5" />
           </button>
