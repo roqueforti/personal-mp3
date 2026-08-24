@@ -13,7 +13,6 @@ import CloudSettingsModal from '@/components/CloudSettingsModal';
 import MusicStudioModal from '@/components/MusicStudioModal';
 import YouTubeSearchModal from '@/components/YouTubeSearchModal';
 import YouTubeAudioBridge from '@/components/YouTubeAudioBridge';
-import PWAInstallBanner from '@/components/PWAInstallBanner';
 import PWAUpdateToast from '@/components/PWAUpdateToast';
 import BottomNav from '@/components/BottomNav';
 import { useAudio } from '@/context/AudioContext';
@@ -50,9 +49,6 @@ export default function HomePage() {
 
       {/* Main Content Area */}
       <section className="flex-1 w-full overflow-x-hidden">
-        <div className="max-w-md mx-auto px-4 pt-2.5">
-          <PWAInstallBanner />
-        </div>
         <SongList currentTab={currentTab} />
       </section>
 
