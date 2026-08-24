@@ -17,79 +17,97 @@ export interface YouTubeSearchResult {
   viewCountText?: string;
 }
 
-// 1. YouTube Scraper with Consent Bypass Cookie
-async function searchYouTube(query: string): Promise<YouTubeSearchResult[]> {
+function parseISODuration(duration: string): number {
+  const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (!match) return 0;
+  const hours = parseInt(match[1] || '0', 10);
+  const minutes = parseInt(match[2] || '0', 10);
+  const seconds = parseInt(match[3] || '0', 10);
+  return hours * 3600 + minutes * 60 + seconds;
+}
+
+function formatDuration(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s < 10 ? '0' : ''}${s}`;
+}
+
+// 1. Official YouTube Data API v3 Search
+async function searchYouTubeOfficial(
+  query: string,
+  apiKey: string
+): Promise<YouTubeSearchResult[]> {
   try {
-    const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(query.trim() + ' audio')}`;
-    const res = await fetch(url, {
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-        'Accept-Language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
-        'Cookie': 'SOCS=CAESEwgDEgk2MTQ1NzE2OTUaAmVuIAEaBgiA_LyaBg; CONSENT=PENDING+999; PREF=tz=Asia.Jakarta;',
-      },
-      next: { revalidate: 3600 },
-    });
+    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=15&q=${encodeURIComponent(
+      query.trim()
+    )}&key=${apiKey.trim()}`;
 
-    if (!res.ok) return [];
-
-    const html = await res.text();
-    const match = html.match(/var ytInitialData = ({.*?});<\/script>/);
-    if (!match) return [];
-
-    const data = JSON.parse(match[1]);
-    const contents =
-      data?.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents?.[0]
-        ?.itemSectionRenderer?.contents || [];
-
-    const results: YouTubeSearchResult[] = [];
-
-    for (const item of contents) {
-      const v = item?.videoRenderer;
-      if (v && v.videoId) {
-        const title = v.title?.runs?.[0]?.text || '';
-        const artist =
-          v.ownerText?.runs?.[0]?.text || v.shortBylineText?.runs?.[0]?.text || 'YouTube Music';
-        const durationText = v.lengthText?.simpleText || '0:00';
-        const thumbnail =
-          v.thumbnail?.thumbnails?.[v.thumbnail.thumbnails.length - 1]?.url ||
-          `https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg`;
-        const viewCountText = v.viewCountText?.simpleText || '';
-
-        const parts = durationText.split(':').map(Number);
-        let durationSec = 0;
-        if (parts.length === 2) durationSec = (parts[0] || 0) * 60 + (parts[1] || 0);
-        else if (parts.length === 3)
-          durationSec = (parts[0] || 0) * 3600 + (parts[1] || 0) * 60 + (parts[2] || 0);
-
-        if (durationSec > 0 && durationSec < 1200) {
-          results.push({
-            id: `yt_${v.videoId}`,
-            videoId: v.videoId,
-            title,
-            artist,
-            album: 'YouTube Music',
-            duration: durationSec,
-            durationFormatted: durationText,
-            thumbnail,
-            source: 'youtube',
-            viewCountText,
-          });
-        }
-      }
+    const searchRes = await fetch(searchUrl, { next: { revalidate: 3600 } });
+    if (!searchRes.ok) {
+      console.warn('YouTube API search status:', searchRes.status);
+      return [];
     }
+
+    const searchData = await searchRes.json();
+    const items = searchData.items || [];
+    if (items.length === 0) return [];
+
+    const videoIds = items
+      .map((item: any) => item.id?.videoId)
+      .filter(Boolean)
+      .join(',');
+
+    if (!videoIds) return [];
+
+    // Fetch video contentDetails for exact duration & stats
+    const videosUrl = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails,snippet,statistics&id=${videoIds}&key=${apiKey.trim()}`;
+    const videosRes = await fetch(videosUrl, { next: { revalidate: 3600 } });
+    const videosData = await videosRes.json();
+    const videoDetails = videosData.items || [];
+
+    const results: YouTubeSearchResult[] = videoDetails.map((v: any) => {
+      const durationSec = parseISODuration(v.contentDetails?.duration || 'PT0S');
+      const views = Number(v.statistics?.viewCount || 0);
+      const viewsFormatted =
+        views > 1000000
+          ? `${(views / 1000000).toFixed(1)}M views`
+          : views > 1000
+          ? `${(views / 1000).toFixed(0)}K views`
+          : `${views} views`;
+
+      const thumbnail =
+        v.snippet?.thumbnails?.high?.url ||
+        v.snippet?.thumbnails?.medium?.url ||
+        v.snippet?.thumbnails?.default?.url ||
+        `https://i.ytimg.com/vi/${v.id}/hqdefault.jpg`;
+
+      return {
+        id: `yt_${v.id}`,
+        videoId: v.id,
+        title: v.snippet?.title || 'Unknown Title',
+        artist: v.snippet?.channelTitle || 'YouTube Music',
+        album: 'YouTube',
+        duration: durationSec,
+        durationFormatted: formatDuration(durationSec),
+        thumbnail,
+        source: 'youtube' as const,
+        viewCountText: viewsFormatted,
+      };
+    });
 
     return results;
   } catch (err) {
-    console.warn('YouTube direct search note:', err);
+    console.error('YouTube Data API v3 error:', err);
     return [];
   }
 }
 
-// 2. iTunes Global Music Search (Ultra-fast, 100% reliable, HD cover art, preview audio)
+// 2. iTunes Global Music Search (Instant Fallback / Enhancement)
 async function searchITunes(query: string): Promise<YouTubeSearchResult[]> {
   try {
-    const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query.trim())}&media=music&entity=song&limit=15`;
+    const url = `https://itunes.apple.com/search?term=${encodeURIComponent(
+      query.trim()
+    )}&media=music&entity=song&limit=15`;
     const res = await fetch(url, { signal: AbortSignal.timeout(4000) });
     if (!res.ok) return [];
 
@@ -98,9 +116,6 @@ async function searchITunes(query: string): Promise<YouTubeSearchResult[]> {
 
     return data.results.map((item: any) => {
       const durationSec = Math.round((item.trackTimeMillis || 0) / 1000);
-      const mins = Math.floor(durationSec / 60);
-      const secs = durationSec % 60;
-      const durationFormatted = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
       const thumbnail =
         item.artworkUrl100?.replace('100x100bb', '600x600bb') ||
         item.artworkUrl60 ||
@@ -112,10 +127,10 @@ async function searchITunes(query: string): Promise<YouTubeSearchResult[]> {
         artist: item.artistName || 'Unknown Artist',
         album: item.collectionName || 'Online Track',
         duration: durationSec,
-        durationFormatted,
+        durationFormatted: formatDuration(durationSec),
         thumbnail,
         streamUrl: item.previewUrl,
-        source: 'itunes',
+        source: 'itunes' as const,
         viewCountText: item.primaryGenreName ? `Genre: ${item.primaryGenreName}` : 'HD Audio',
       };
     });
@@ -128,19 +143,29 @@ async function searchITunes(query: string): Promise<YouTubeSearchResult[]> {
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get('q') || '';
+  const clientApiKey = request.headers.get('x-youtube-api-key') || searchParams.get('key') || '';
+
+  const apiKey =
+    clientApiKey ||
+    process.env.YOUTUBE_API_KEY ||
+    process.env.NEXT_PUBLIC_YOUTUBE_API_KEY ||
+    '';
 
   if (!query.trim()) {
     return NextResponse.json({ success: true, results: [] });
   }
 
   try {
-    // Run YouTube and iTunes searches in parallel for instant sub-250ms results
-    const [ytResults, itunesResults] = await Promise.all([
-      searchYouTube(query),
-      searchITunes(query),
-    ]);
+    let ytResults: YouTubeSearchResult[] = [];
 
-    // Merge results smartly: YouTube first if available, iTunes seamlessly blended
+    // If API Key available, fetch directly from official YouTube Data API v3
+    if (apiKey) {
+      ytResults = await searchYouTubeOfficial(query, apiKey);
+    }
+
+    // Also fetch iTunes catalog for comprehensive library blending
+    const itunesResults = await searchITunes(query);
+
     const merged: YouTubeSearchResult[] = [];
     const seenTitles = new Set<string>();
 
@@ -163,6 +188,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       count: merged.length,
+      hasYouTubeOfficial: Boolean(apiKey && ytResults.length > 0),
       results: merged.slice(0, 30),
     });
   } catch (err: any) {

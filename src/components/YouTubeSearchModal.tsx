@@ -17,6 +17,9 @@ import {
   Youtube,
   Music,
   TrendingUp,
+  Key,
+  Settings2,
+  ExternalLink,
 } from 'lucide-react';
 
 interface YouTubeSearchResult {
@@ -32,6 +35,8 @@ interface YouTubeSearchResult {
   source: 'youtube' | 'itunes';
   viewCountText?: string;
 }
+
+const YT_KEY_STORAGE = 'sonicvault_yt_api_key';
 
 const TRENDING_SEARCHES = [
   'Top Hits Indonesia',
@@ -53,7 +58,6 @@ export default function YouTubeSearchModal() {
     isPlaying,
     togglePlay,
     refreshSongs,
-    syncWithCloud,
   } = useAudio();
 
   const [query, setQuery] = useState('');
@@ -61,7 +65,20 @@ export default function YouTubeSearchModal() {
   const [isLoading, setIsLoading] = useState(false);
   const [savingSongId, setSavingSongId] = useState<string | null>(null);
   const [savedSongIds, setSavedSongIds] = useState<Set<string>>(new Set());
+  const [showKeyConfig, setShowKeyConfig] = useState(false);
+  const [apiKeyInput, setApiKeyInput] = useState('');
+  const [savedApiKey, setSavedApiKey] = useState('');
+  const [hasOfficialYT, setHasOfficialYT] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Load saved API Key from localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedKey = localStorage.getItem(YT_KEY_STORAGE) || '';
+      setSavedApiKey(storedKey);
+      setApiKeyInput(storedKey);
+    }
+  }, []);
 
   useEffect(() => {
     if (isYouTubeSearchOpen && results.length === 0 && !query) {
@@ -71,15 +88,37 @@ export default function YouTubeSearchModal() {
 
   if (!isYouTubeSearchOpen) return null;
 
+  const handleSaveApiKey = () => {
+    const trimmed = apiKeyInput.trim();
+    if (typeof window !== 'undefined') {
+      if (trimmed) {
+        localStorage.setItem(YT_KEY_STORAGE, trimmed);
+      } else {
+        localStorage.removeItem(YT_KEY_STORAGE);
+      }
+      setSavedApiKey(trimmed);
+      setShowKeyConfig(false);
+      handleSearch(query || 'Top Hits Indonesia');
+    }
+  };
+
   const handleSearch = async (searchQuery: string) => {
     if (!searchQuery.trim()) return;
 
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/youtube/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      const headers: Record<string, string> = {};
+      if (savedApiKey) {
+        headers['x-youtube-api-key'] = savedApiKey;
+      }
+
+      const res = await fetch(`/api/youtube/search?q=${encodeURIComponent(searchQuery.trim())}`, {
+        headers,
+      });
       const data = await res.json();
       if (data.success && Array.isArray(data.results)) {
         setResults(data.results);
+        setHasOfficialYT(Boolean(data.hasYouTubeOfficial));
       }
     } catch (e) {
       console.error('Search error:', e);
@@ -174,23 +213,82 @@ export default function YouTubeSearchModal() {
             </div>
             <div>
               <h3 className="text-base font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-                <span>Cari Musik YouTube</span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700">
-                  Online Stream
-                </span>
+                <span>Cari Musik Online</span>
+                {savedApiKey ? (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    YouTube API Aktif
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-700">
+                    Katalog Global
+                  </span>
+                )}
               </h3>
               <p className="text-xs text-slate-500 font-medium">
                 Putar jutaan lagu online & simpan ke Supabase Vault
               </p>
             </div>
           </div>
-          <button
-            onClick={() => setIsYouTubeSearchOpen(false)}
-            className="p-2 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-200/50 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setShowKeyConfig(!showKeyConfig)}
+              className={`p-2 rounded-full transition-colors ${
+                showKeyConfig || savedApiKey
+                  ? 'text-red-600 bg-red-50'
+                  : 'text-slate-400 hover:text-slate-700 hover:bg-slate-200/50'
+              }`}
+              title="Pengaturan YouTube Data API Key"
+            >
+              <Key className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setIsYouTubeSearchOpen(false)}
+              className="p-2 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-200/50 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
+
+        {/* Optional YouTube API Key Setup Drawer */}
+        {showKeyConfig && (
+          <div className="p-4 bg-amber-50/70 border-b border-amber-200/60 space-y-2 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-amber-950 flex items-center gap-1.5">
+                <Key className="w-4 h-4 text-amber-600" />
+                Google YouTube Data API v3 Key (Opsional)
+              </span>
+              <a
+                href="https://console.cloud.google.com/apis/credentials"
+                target="_blank"
+                rel="noreferrer"
+                className="text-[11px] font-bold text-amber-700 hover:underline flex items-center gap-1"
+              >
+                <span>Ambil Key Gratis</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+            <p className="text-[11px] text-amber-800 leading-relaxed">
+              Masukkan Google Cloud API Key gratis Anda untuk mengakses 100% video, live cover, dan klip resmi YouTube tanpa batasan.
+            </p>
+            <div className="flex gap-2 pt-1">
+              <input
+                type="password"
+                value={apiKeyInput}
+                onChange={(e) => setApiKeyInput(e.target.value)}
+                placeholder="AIzaSy..."
+                className="flex-1 px-3 py-2 rounded-xl bg-white border border-amber-200 text-xs font-mono text-slate-900 focus:outline-none focus:border-amber-400"
+              />
+              <button
+                onClick={handleSaveApiKey}
+                className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-colors"
+              >
+                Simpan Key
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Search Bar & Chips */}
         <div className="p-4 border-b border-slate-100 bg-white space-y-3">
@@ -244,17 +342,19 @@ export default function YouTubeSearchModal() {
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-20 text-slate-400">
               <Loader2 className="w-8 h-8 animate-spin text-red-600 mb-3" />
-              <p className="text-xs font-semibold">Mencari lagu di YouTube...</p>
+              <p className="text-xs font-semibold">Mencari lagu online...</p>
             </div>
           ) : results.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-slate-400 text-center">
               <Music className="w-10 h-10 text-slate-300 mb-3" />
               <p className="text-xs font-semibold text-slate-600">Tidak ada hasil ditemukan</p>
-              <p className="text-[11px] text-slate-400 mt-1">Coba cari dengan kata kunci lain atau pilih rekomendasi di atas.</p>
+              <p className="text-[11px] text-slate-400 mt-1">Coba cari dengan kata kunci lain atau pilih rekomendasi tren di atas.</p>
             </div>
           ) : (
             results.map((item) => {
-              const isCurrent = currentSong?.youtubeVideoId === item.videoId || currentSong?.id === item.id;
+              const isCurrent =
+                (item.videoId && currentSong?.youtubeVideoId === item.videoId) ||
+                currentSong?.id === item.id;
               const isSaved = savedSongIds.has(item.id);
               const isSaving = savingSongId === item.id;
 
@@ -287,9 +387,20 @@ export default function YouTubeSearchModal() {
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <h4 className="text-xs font-bold text-slate-900 truncate leading-snug">
-                        {item.title}
-                      </h4>
+                      <div className="flex items-center gap-1.5">
+                        <h4 className="text-xs font-bold text-slate-900 truncate leading-snug">
+                          {item.title}
+                        </h4>
+                        {item.source === 'youtube' ? (
+                          <span className="px-1.5 py-0.2 rounded bg-red-100 text-red-700 text-[9px] font-extrabold flex-shrink-0">
+                            YT
+                          </span>
+                        ) : (
+                          <span className="px-1.5 py-0.2 rounded bg-indigo-100 text-indigo-700 text-[9px] font-extrabold flex-shrink-0">
+                            HD
+                          </span>
+                        )}
+                      </div>
                       <p className="text-[11px] font-medium text-slate-500 truncate mt-0.5">
                         {item.artist}
                       </p>
@@ -354,7 +465,7 @@ export default function YouTubeSearchModal() {
 
         {/* Footer */}
         <div className="px-5 py-3 border-t border-slate-100 bg-slate-50 flex items-center justify-between text-xs text-slate-500 font-medium">
-          <span>{results.length} hasil pencarian musik</span>
+          <span>{results.length} lagu ditemukan</span>
           <button
             onClick={() => setIsYouTubeSearchOpen(false)}
             className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold transition-colors"
