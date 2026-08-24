@@ -2,6 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
+import DesktopSidebar from '@/components/DesktopSidebar';
+import DesktopHeader from '@/components/DesktopHeader';
+import DesktopBottomPlayer from '@/components/DesktopBottomPlayer';
 import SongList from '@/components/SongList';
 import MiniPlayer from '@/components/MiniPlayer';
 import NowPlayingModal from '@/components/NowPlayingModal';
@@ -63,25 +66,43 @@ export default function HomePage() {
   }, [isStudioOpen]);
 
   return (
-    <main className="min-h-screen bg-background text-slate-900 flex flex-col relative selection:bg-slate-900 selection:text-white max-w-lg mx-auto bg-white border-x border-slate-100 shadow-xs">
-      {/* Top Native Mobile Header */}
-      <Navbar />
+    <div className="min-h-screen bg-slate-50/50 text-slate-900 flex flex-col md:flex-row relative selection:bg-slate-900 selection:text-white">
+      {/* 1. Left Desktop Sidebar (Spotify Web style - hidden on mobile) */}
+      <DesktopSidebar currentTab={currentTab} setCurrentTab={handleTabChange} />
 
-      {/* PWA Auto Update Notification Toast */}
-      <PWAUpdateToast />
+      {/* 2. Main Fluid Content Container */}
+      <div className="flex-1 flex flex-col md:ml-64 min-h-screen bg-white md:bg-slate-50/40">
+        {/* Mobile Top Navbar (< md) */}
+        <div className="md:hidden">
+          <Navbar />
+        </div>
 
-      {/* Main Content Area */}
-      <section className="flex-1 w-full">
-        <SongList currentTab={currentTab} />
-      </section>
+        {/* Desktop Top Header (>= md) */}
+        <DesktopHeader />
 
-      {/* Floating Mini Player (Above Bottom Nav) */}
-      <MiniPlayer />
+        {/* PWA Auto Update Notification Toast */}
+        <PWAUpdateToast />
 
-      {/* Native Bottom Navigation Bar */}
-      <BottomNav currentTab={currentTab} setCurrentTab={handleTabChange} />
+        {/* Main Content Area */}
+        <main className="flex-1 w-full">
+          <SongList currentTab={currentTab} />
+        </main>
+      </div>
 
-      {/* Modals & Full Player */}
+      {/* 3. Mobile Floating Mini Player (< md) */}
+      <div className="md:hidden">
+        <MiniPlayer />
+      </div>
+
+      {/* 4. Mobile Bottom Navigation Bar (< md) */}
+      <div className="md:hidden">
+        <BottomNav currentTab={currentTab} setCurrentTab={handleTabChange} />
+      </div>
+
+      {/* 5. Desktop Full-Featured Bottom Player Bar (>= md - Spotify Web style) */}
+      <DesktopBottomPlayer />
+
+      {/* Modals & Audio Components */}
       <NowPlayingModal />
       <EqualizerModal />
       <SleepTimerModal />
@@ -92,6 +113,6 @@ export default function HomePage() {
       <YouTubeAudioBridge />
       <BackgroundPlaybackModal />
       <AMOLEDBlackScreenOverlay />
-    </main>
+    </div>
   );
 }

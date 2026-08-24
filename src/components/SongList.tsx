@@ -99,7 +99,7 @@ export default function SongList({ currentTab = 'home' }: SongListProps) {
   }, [filteredSongs, activeTabFilter]);
 
   return (
-    <div className="max-w-md mx-auto px-4 pt-2 pb-[calc(12rem+env(safe-area-inset-bottom,0px))] space-y-5">
+    <div className="w-full max-w-6xl mx-auto px-4 md:px-8 pt-2 pb-36 space-y-6">
       {/* PWA Install Banner at Top */}
       <PWAInstallBanner />
 
@@ -110,27 +110,27 @@ export default function SongList({ currentTab = 'home' }: SongListProps) {
             <Disc3 className="w-10 h-10 text-slate-800 animate-spin-slow" />
           </div>
           <h3 className="text-xl font-extrabold text-slate-900 mb-2 tracking-tight">Vault Masih Kosong</h3>
-          <p className="text-slate-500 text-xs max-w-xs mb-6 leading-relaxed">
-            Database Supabase Anda masih kosong. Silakan upload file MP3 Anda ke Supabase via Music Studio, atau coba 2 musik demo di bawah ini!
+          <p className="text-slate-500 text-xs max-w-md mb-6 leading-relaxed">
+            Database Supabase / Vault lokal Anda masih kosong. Silakan upload file MP3 Anda ke Vault via Music Studio, atau coba 2 musik demo instan di bawah ini!
           </p>
-          <div className="flex flex-col w-full gap-2.5 max-w-xs">
+          <div className="flex flex-col sm:flex-row items-center justify-center w-full gap-3 max-w-md">
             <button
               onClick={() => {
                 triggerHaptic(10);
                 setIsStudioOpen(true);
               }}
-              className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl bg-slate-900 hover:bg-black text-white font-bold text-xs transition-transform active:scale-95 shadow-md"
+              className="flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-slate-900 hover:bg-black text-white font-bold text-xs transition-transform active:scale-95 shadow-md"
             >
               <Upload className="w-4 h-4" />
-              Upload Lagu ke Supabase (Music Studio)
+              Upload Lagu ke Vault
             </button>
             <button
               onClick={handleLoadDemoSongs}
               disabled={isGeneratingDemo}
-              className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs transition-all active:scale-95 shadow-sm"
+              className="flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-3 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs transition-all active:scale-95 shadow-sm"
             >
               <Sparkles className="w-4 h-4 text-amber-500" />
-              {isGeneratingDemo ? 'Membuat Demo Audio...' : 'Coba 2 Musik Demo Instan'}
+              {isGeneratingDemo ? 'Membuat Demo Audio...' : 'Coba 2 Musik Demo'}
             </button>
           </div>
         </div>
@@ -143,27 +143,27 @@ export default function SongList({ currentTab = 'home' }: SongListProps) {
           }} />
 
           {/* SECTION 2: Category Filter Tabs */}
-          <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
-            <div className="flex gap-5 text-xs font-bold text-slate-400">
+          <div className="flex items-center justify-between border-b border-slate-200/80 pb-2.5">
+            <div className="flex gap-6 text-xs font-bold text-slate-400">
               <button
                 onClick={() => {
                   triggerHaptic(5);
                   setActiveTabFilter('all');
                 }}
-                className={`transition-colors relative pb-2 -mb-2.5 ${
+                className={`transition-colors relative pb-2 -mb-3 ${
                   activeTabFilter === 'all'
                     ? 'text-slate-900 font-extrabold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-slate-900'
                     : 'hover:text-slate-700'
                 }`}
               >
-                All
+                All Tracks
               </button>
               <button
                 onClick={() => {
                   triggerHaptic(5);
                   setActiveTabFilter('favorites');
                 }}
-                className={`transition-colors relative pb-2 -mb-2.5 ${
+                className={`transition-colors relative pb-2 -mb-3 ${
                   activeTabFilter === 'favorites'
                     ? 'text-slate-900 font-extrabold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-slate-900'
                     : 'hover:text-slate-700'
@@ -176,7 +176,7 @@ export default function SongList({ currentTab = 'home' }: SongListProps) {
                   triggerHaptic(5);
                   setActiveTabFilter('playlists');
                 }}
-                className={`transition-colors relative pb-2 -mb-2.5 ${
+                className={`transition-colors relative pb-2 -mb-3 ${
                   activeTabFilter === 'playlists'
                     ? 'text-slate-900 font-extrabold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-slate-900'
                     : 'hover:text-slate-700'
@@ -186,22 +186,22 @@ export default function SongList({ currentTab = 'home' }: SongListProps) {
               </button>
             </div>
 
-            <span className="text-[11px] font-bold text-slate-400">
+            <span className="text-xs font-bold text-slate-400">
               {activeTabFilter === 'playlists' ? `${playlists.length} playlist` : `${displaySongs.length} lagu`}
             </span>
           </div>
 
           {/* SECTION 3: Playlists View OR (Featured Cards + Songs List) */}
           {activeTabFilter === 'playlists' ? (
-            <div className="space-y-3 pt-1 animate-fade-in">
+            <div className="space-y-4 pt-1 animate-fade-in">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-extrabold text-slate-900">Daftar Playlist</h3>
+                <h3 className="text-base font-extrabold text-slate-900">Daftar Playlist</h3>
                 <button
                   onClick={() => {
                     triggerHaptic(10);
                     setIsPlaylistModalOpen(true);
                   }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 text-white text-xs font-bold active:scale-95 transition-transform"
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold active:scale-95 transition-transform"
                 >
                   <FolderPlus className="w-3.5 h-3.5" />
                   + Buat Playlist
@@ -214,7 +214,7 @@ export default function SongList({ currentTab = 'home' }: SongListProps) {
                   <p className="text-xs font-semibold">Belum ada playlist dibuat</p>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {playlists.map((pl) => {
                     const plSongs = songs.filter((s) => pl.songIds.includes(s.id));
                     return (
@@ -226,11 +226,11 @@ export default function SongList({ currentTab = 'home' }: SongListProps) {
                             playSong(plSongs[0], plSongs);
                           }
                         }}
-                        className="p-3.5 rounded-2xl bg-white border border-slate-200/90 hover:bg-slate-50 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-between gap-3 shadow-2xs"
+                        className="p-4 rounded-2xl bg-white border border-slate-200/90 hover:bg-slate-50 hover:border-slate-300 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-between gap-3 shadow-2xs group"
                       >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center text-slate-800 flex-shrink-0">
-                            <ListMusic className="w-5 h-5" />
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-800 flex-shrink-0 group-hover:bg-slate-200 transition-colors">
+                            <ListMusic className="w-6 h-6" />
                           </div>
                           <div className="min-w-0">
                             <h4 className="text-xs font-bold text-slate-900 truncate">{pl.name}</h4>
@@ -239,8 +239,8 @@ export default function SongList({ currentTab = 'home' }: SongListProps) {
                         </div>
 
                         {plSongs.length > 0 && (
-                          <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-900">
-                            <Play className="w-3.5 h-3.5 fill-slate-900 ml-0.5" />
+                          <div className="w-9 h-9 rounded-full bg-slate-900 text-white flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Play className="w-4 h-4 fill-white ml-0.5" />
                           </div>
                         )}
                       </div>
@@ -251,24 +251,140 @@ export default function SongList({ currentTab = 'home' }: SongListProps) {
             </div>
           ) : (
             <>
-              {/* SECTION 3: Featured Playlists / Mood Cards */}
+              {/* Featured Playlists / Mood Cards */}
               <FeaturedCards onSelectCategory={(cat) => {
                 triggerHaptic(5);
                 setSearchQuery(cat.toLowerCase().split(' ')[0]);
               }} />
 
-              {/* SECTION 4: Top Tracks List (Numbered Rows) */}
+              {/* TRACKS LIST SECTION */}
               <div className="space-y-3 pt-2">
                 <div className="flex items-center justify-between px-1">
-                  <h3 className="text-base font-extrabold text-slate-900 tracking-tight">
-                    {activeTabFilter === 'favorites' ? 'Lagu Favorit' : 'Top weekly'}
+                  <h3 className="text-base md:text-lg font-extrabold text-slate-900 tracking-tight">
+                    {activeTabFilter === 'favorites' ? 'Lagu Favorit' : 'Top Tracks Vault'}
                   </h3>
                   <span className="text-xs font-bold text-slate-400">
                     {displaySongs.length} lagu
                   </span>
                 </div>
 
-                <div className="space-y-1">
+                {/* DESKTOP TABLE VIEW (Spotify Web Style - hidden on mobile) */}
+                <div className="hidden md:block overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-2xs">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50/50">
+                        <th className="py-3 px-4 w-12 text-center">#</th>
+                        <th className="py-3 px-4">Judul Lagu</th>
+                        <th className="py-3 px-4">Album</th>
+                        <th className="py-3 px-4 w-28 text-center">Tipe</th>
+                        <th className="py-3 px-4 w-20 text-right">Durasi</th>
+                        <th className="py-3 px-4 w-16 text-center">Opsi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50 text-xs font-medium text-slate-700">
+                      {displaySongs.map((song, idx) => {
+                        const isCurrent = currentSong?.id === song.id;
+                        const rankNumber = idx + 1;
+
+                        return (
+                          <tr
+                            key={song.id}
+                            onClick={() => handleSongClick(song)}
+                            className={`group hover:bg-slate-50/90 cursor-pointer transition-colors ${
+                              isCurrent ? 'bg-slate-100/70 text-slate-950 font-bold' : ''
+                            }`}
+                          >
+                            {/* # / Play Icon column */}
+                            <td className="py-3 px-4 text-center">
+                              <div className="flex items-center justify-center">
+                                {isCurrent && isPlaying ? (
+                                  <div className="flex items-end gap-0.5 h-3.5">
+                                    <span className="w-1 bg-emerald-600 rounded-full animate-bounce h-2.5" />
+                                    <span className="w-1 bg-emerald-600 rounded-full animate-bounce delay-100 h-3.5" />
+                                    <span className="w-1 bg-emerald-600 rounded-full animate-bounce delay-200 h-2" />
+                                  </div>
+                                ) : (
+                                  <>
+                                    <span className="group-hover:hidden text-xs text-slate-400 font-bold">
+                                      {rankNumber}
+                                    </span>
+                                    <Play className="w-3.5 h-3.5 fill-slate-900 text-slate-900 hidden group-hover:block" />
+                                  </>
+                                )}
+                              </div>
+                            </td>
+
+                            {/* Title & Artist & Thumbnail */}
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-3">
+                                <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0 border border-slate-200 shadow-2xs">
+                                  {song.coverArt ? (
+                                    <img src={song.coverArt} alt={song.title} className="w-full h-full object-cover" />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-slate-400">
+                                      <Music className="w-4 h-4" />
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="min-w-0">
+                                  <p className={`truncate text-xs font-bold ${isCurrent ? 'text-emerald-700' : 'text-slate-900'}`}>
+                                    {song.title}
+                                  </p>
+                                  <p className="truncate text-[11px] text-slate-400">{song.artist}</p>
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Album */}
+                            <td className="py-3 px-4 text-slate-500 text-xs truncate max-w-xs">
+                              {song.album || 'Personal Vault'}
+                            </td>
+
+                            {/* Source Type */}
+                            <td className="py-3 px-4 text-center">
+                              {song.blob ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                  Offline MP3
+                                </span>
+                              ) : song.youtubeVideoId ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                  YouTube
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">
+                                  Cloud
+                                </span>
+                              )}
+                            </td>
+
+                            {/* Duration */}
+                            <td className="py-3 px-4 text-right font-mono text-xs text-slate-400">
+                              {formatTime(song.duration)}
+                            </td>
+
+                            {/* Actions */}
+                            <td className="py-3 px-4 text-center" onClick={(e) => e.stopPropagation()}>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  triggerHaptic(5);
+                                  setSelectedActionSong(song);
+                                }}
+                                className="p-1.5 text-slate-400 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors"
+                              >
+                                <MoreVertical className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* MOBILE CARD VIEW (Active on phones & small screens) */}
+                <div className="space-y-1 md:hidden">
                   {displaySongs.map((song, idx) => {
                     const isCurrent = currentSong?.id === song.id;
                     const rankNumber = idx + 1;
