@@ -571,11 +571,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   // Master Play Function - Ultra-Fast Instant Streaming (< 50ms response)
   const playSong = useCallback(
     (song: Song, newQueue?: Song[]) => {
-      initWebAudio();
-      if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
-        audioContextRef.current.resume().catch(() => {});
-      }
-
       if (!audioRef.current) return;
 
       const effectiveQueue = newQueue || (queueRef.current.length > 0 ? queueRef.current : songs);
@@ -601,7 +596,10 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
       // 3. If YouTube track, delegate to YouTubeAudioBridge
       if (song.youtubeVideoId) {
-        if (audioRef.current) audioRef.current.pause();
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current.src = '';
+        }
         db.incrementPlayCount(song.id).catch(() => {});
         MediaSessionController.getInstance().updateMetadata(song);
         MediaSessionController.getInstance().updatePlaybackState('playing');
@@ -625,11 +623,12 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // 4. Synchronous immediate playback right in the click callstack
+      // 5. Synchronous immediate playback right in the click callstack
       const audio = audioRef.current;
+      audio.muted = false;
+      audio.volume = Math.max(0.1, volume || 1);
       audio.src = audioSrc;
-      audio.playbackRate = playbackRate;
-      audio.volume = volume;
+      audio.playbackRate = playbackRate || 1;
 
       const playPromise = audio.play();
       if (playPromise !== undefined) {
@@ -736,15 +735,11 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
     if (!audioRef.current) return;
 
-    initWebAudio();
-    if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
-      audioContextRef.current.resume().catch(() => {});
-    }
-
     if (audioRef.current.paused) {
       if (!currentSong && songs.length > 0) {
         playSong(songs[0]);
       } else {
+        audioRef.current.muted = false;
         audioRef.current.play().catch(console.error);
         setIsPlaying(true);
       }
