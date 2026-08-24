@@ -662,7 +662,19 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       setIsLoadingAudio(false);
       setIsPlaying(true);
 
-      // 3. Determine audio source synchronously for local / stream songs
+      // 3. If YouTube track, delegate to YouTubeAudioBridge (Plays 100% full song)
+      if (song.youtubeVideoId) {
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current.src = '';
+        }
+        db.incrementPlayCount(song.id).catch(() => {});
+        MediaSessionController.getInstance().updateMetadata(song);
+        MediaSessionController.getInstance().updatePlaybackState('playing');
+        return;
+      }
+
+      // 4. Determine audio source synchronously for local / Supabase songs
       let audioSrc = '';
       if (song.blob) {
         const objectUrl = URL.createObjectURL(song.blob);
@@ -672,45 +684,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       } else if (song.streamUrl) {
         audioSrc = song.streamUrl;
         setBufferedPercentage(0);
-      }
-
-      // If YouTube track without direct streamUrl, attempt on-the-fly stream resolution
-      if (!audioSrc && song.youtubeVideoId) {
-        fetch(
-          `/api/youtube/stream?videoId=${song.youtubeVideoId}&title=${encodeURIComponent(
-            song.title
-          )}&artist=${encodeURIComponent(song.artist)}`
-        )
-          .then((res) => res.json())
-          .then((data) => {
-            if (
-              data.success &&
-              data.streamUrl &&
-              audioRef.current &&
-              currentSongRef.current?.id === song.id
-            ) {
-              const updatedSong: Song = {
-                ...song,
-                streamUrl: data.streamUrl,
-                youtubeVideoId: undefined,
-              };
-              setCurrentSong(updatedSong);
-              audioRef.current.src = data.streamUrl;
-              audioRef.current.play().catch(console.warn);
-              MediaSessionController.getInstance().updateMetadata(updatedSong);
-            }
-          })
-          .catch(() => {});
-
-        // Fallback to YouTube Audio Bridge if direct audio stream is pending
-        if (audioRef.current) {
-          audioRef.current.pause();
-          audioRef.current.src = '';
-        }
-        db.incrementPlayCount(song.id).catch(() => {});
-        MediaSessionController.getInstance().updateMetadata(song);
-        MediaSessionController.getInstance().updatePlaybackState('playing');
-        return;
       }
 
       if (!audioSrc) {
