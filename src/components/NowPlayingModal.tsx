@@ -327,7 +327,8 @@ export default function NowPlayingModal() {
         {/* Dual-Layer Buffered Seekbar and Timing */}
         <div className="w-full px-2 mt-4 space-y-2">
           {(() => {
-            const playedPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
+            const activeDuration = duration > 0 ? duration : (currentSong.duration || 0);
+            const playedPercent = activeDuration > 0 ? (currentTime / activeDuration) * 100 : 0;
             const bufferedPercent = Math.min(100, Math.max(playedPercent, bufferedPercentage));
 
             return (
@@ -351,7 +352,7 @@ export default function NowPlayingModal() {
                 <input
                   type="range"
                   min={0}
-                  max={duration || 100}
+                  max={activeDuration || 100}
                   value={currentTime}
                   onChange={(e) => seek(parseFloat(e.target.value))}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
@@ -359,18 +360,19 @@ export default function NowPlayingModal() {
 
                 {/* Scrubber Thumb */}
                 <div
-                  className="absolute w-3.5 h-3.5 bg-slate-900 border-2 border-white rounded-full shadow-md pointer-events-none transition-transform group-hover:scale-125"
-                  style={{
-                    left: `calc(${playedPercent}% - 7px)`,
-                  }}
+                  className="absolute w-3.5 h-3.5 bg-slate-900 border-2 border-white rounded-full shadow-md pointer-events-none -ml-1.5 transition-transform group-hover:scale-125"
+                  style={{ left: `${playedPercent}%` }}
                 />
               </div>
             );
           })()}
 
-          <div className="flex justify-between text-xs font-semibold text-slate-500">
-            <span>{formatTime(currentTime)}</span>
-            <span>{formattedRemaining}</span>
+          {/* Time Labels */}
+          <div className="flex justify-between text-xs font-semibold text-slate-400">
+            <span className="font-mono text-slate-500">{formatTime(currentTime)}</span>
+            <span className="font-mono text-slate-500">
+              {formatTime(duration > 0 ? duration : (currentSong.duration || 0))}
+            </span>
           </div>
         </div>
 

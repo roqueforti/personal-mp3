@@ -205,13 +205,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
     const audio = new Audio();
     audio.preload = 'auto';
-    audio.crossOrigin = 'anonymous';
     audio.setAttribute('playsinline', 'true');
     audio.setAttribute('webkit-playsinline', 'true');
     audioRef.current = audio;
 
     const onPlay = () => {
       setIsPlaying(true);
+      setIsLoadingAudio(false);
       MediaSessionController.getInstance().updatePlaybackState('playing');
     };
 
@@ -222,6 +222,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
     const onTimeUpdate = () => {
       setCurrentTime(audio.currentTime);
+      if (Number.isFinite(audio.duration) && audio.duration > 0) {
+        setDuration(audio.duration);
+      }
       MediaSessionController.getInstance().updatePositionState(
         audio.duration || 0,
         audio.currentTime,
@@ -234,6 +237,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         setDuration(audio.duration);
       }
       setIsLoadingAudio(false);
+    };
+
+    const onCanPlay = () => {
+      setIsLoadingAudio(false);
+      if (Number.isFinite(audio.duration) && audio.duration > 0) {
+        setDuration(audio.duration);
+      }
     };
 
     const onEnded = () => {
@@ -258,7 +268,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     };
 
     const onError = () => {
-      console.warn('Audio playback encountered an error or network stall.');
+      console.warn('Audio playback note: streaming source waiting or switching.');
       setIsLoadingAudio(false);
     };
 
@@ -286,6 +296,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     audio.addEventListener('pause', onPause);
     audio.addEventListener('timeupdate', onTimeUpdate);
     audio.addEventListener('loadedmetadata', onLoadedMetadata);
+    audio.addEventListener('canplay', onCanPlay);
+    audio.addEventListener('loadeddata', onCanPlay);
     audio.addEventListener('ended', onEnded);
     audio.addEventListener('waiting', () => setIsLoadingAudio(true));
     audio.addEventListener('playing', () => setIsLoadingAudio(false));
@@ -297,6 +309,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       audio.removeEventListener('pause', onPause);
       audio.removeEventListener('timeupdate', onTimeUpdate);
       audio.removeEventListener('loadedmetadata', onLoadedMetadata);
+      audio.removeEventListener('canplay', onCanPlay);
+      audio.removeEventListener('loadeddata', onCanPlay);
       audio.removeEventListener('ended', onEnded);
       audio.removeEventListener('progress', onProgress);
       audio.removeEventListener('error', onError);
@@ -569,7 +583,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         setIsCaching(false);
         setCachingSongId(null);
       } else {
-        // Instant streaming playback via Next.js proxy / Drive stream
+        // Direct streaming playback (Supabase CDN or Drive proxy)
         const streamUrl = cloudApi.getAudioStreamUrl(song);
         if (streamUrl) {
           audioSrc = streamUrl;
@@ -577,29 +591,45 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           setBufferedTime(0);
 
           // Asynchronously download & cache blob in background for offline use
-          if (song.driveFileId) {
-            setIsCaching(true);
-            setCachingSongId(song.id);
+          setIsCaching(true);
+          setCachingSongId(song.id);
 
-            cloudApi
-              .fetchSongAudioBlob(song.driveFileId)
-              .then(async (blob) => {
-                if (blob) {
-                  const updated: Song = { ...song, blob };
-                  await db.saveSong(updated);
-                  setSongs((prev) => prev.map((s) => (s.id === song.id ? updated : s)));
-                  setCurrentSong((cur) => (cur?.id === song.id ? updated : cur));
-                  updateStorageStats();
+          const fetchPromise =
+            song.streamUrl && !song.streamUrl.includes('drive.google.com') && !song.streamUrl.includes('docs.google.com')
+              ? fetch(song.streamUrl).then((r) => r.blob())
+              : cloudApi.fetchSongAudioBlob(song.driveFileId || '');
+
+          fetchPromise
+            .then(async (blob) => {
+              if (blob && blob.size > 1000) {
+                const updated: Song = { ...song, blob };
+                await db.saveSong(updated);
+                setSongs((prev) => prev.map((s) => (s.id === song.id ? updated : s)));
+                setCurrentSong((cur) => (cur?.id === song.id ? updated : cur));
+                updateStorageStats();
+
+                // If stream is stalled / waiting for bytes, immediately swap to the downloaded blob!
+                if (
+                  audioRef.current &&
+                  (audioRef.current.currentTime === 0 ||
+                    audioRef.current.paused ||
+                    audioRef.current.error ||
+                    !audioRef.current.duration)
+                ) {
+                  const blobUrl = URL.createObjectURL(blob);
+                  activeBlobUrlRef.current = blobUrl;
+                  audioRef.current.src = blobUrl;
+                  audioRef.current.play().catch(console.error);
                 }
-              })
-              .catch((err) => {
-                console.warn('Background caching note:', err);
-              })
-              .finally(() => {
-                setIsCaching(false);
-                setCachingSongId((cur) => (cur === song.id ? null : cur));
-              });
-          }
+              }
+            })
+            .catch((err) => {
+              console.warn('Background caching note:', err);
+            })
+            .finally(() => {
+              setIsCaching(false);
+              setCachingSongId((cur) => (cur === song.id ? null : cur));
+            });
         }
       }
 
@@ -614,14 +644,16 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       audioRef.current.volume = volume;
 
       try {
-        await audioRef.current.play();
+        const playPromise = audioRef.current.play();
+        if (playPromise !== undefined) {
+          await playPromise;
+        }
         setIsPlaying(true);
         db.incrementPlayCount(song.id);
         MediaSessionController.getInstance().updateMetadata(song);
         MediaSessionController.getInstance().updatePlaybackState('playing');
       } catch (err) {
-        console.error('Audio play failed:', err);
-        setIsPlaying(false);
+        console.warn('Audio streaming buffering:', err);
       } finally {
         setIsLoadingAudio(false);
       }
