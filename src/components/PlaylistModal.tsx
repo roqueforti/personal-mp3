@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAudio } from '@/context/AudioContext';
 import * as db from '@/lib/db';
 import { Playlist } from '@/types/music';
@@ -30,6 +30,8 @@ export default function PlaylistModal() {
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [playlistToDelete, setPlaylistToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [dragOffset, setDragOffset] = useState(0);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
   if (!isPlaylistModalOpen) return null;
 
@@ -37,6 +39,34 @@ export default function PlaylistModal() {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       navigator.vibrate(ms);
     }
+  };
+
+  // Edge Swipe Back gesture
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    if (touch.clientX < 50) {
+      touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchStartRef.current) return;
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - touchStartRef.current.x;
+    const deltaY = touch.clientY - touchStartRef.current.y;
+    if (deltaX > 0 && Math.abs(deltaX) > Math.abs(deltaY)) {
+      setDragOffset(deltaX);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (dragOffset > 75) {
+      triggerHaptic(10);
+      setIsPlaylistModalOpen(false);
+      setSelectedSongForPlaylist(null);
+    }
+    setDragOffset(0);
+    touchStartRef.current = null;
   };
 
   const handleCreatePlaylist = async (e: React.FormEvent) => {
@@ -89,7 +119,16 @@ export default function PlaylistModal() {
 
   return (
     <>
-      <div className="fixed inset-0 z-50 bg-white text-slate-900 flex flex-col pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)] animate-slide-up duration-200 select-none max-w-lg mx-auto border-x border-slate-100 shadow-2xl">
+      <div
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        style={{
+          transform: dragOffset > 0 ? `translateX(${dragOffset}px)` : undefined,
+          transition: dragOffset === 0 ? 'transform 0.2s ease-out' : 'none',
+        }}
+        className="fixed inset-0 z-50 bg-white text-slate-900 flex flex-col pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)] animate-page-push select-none max-w-lg mx-auto border-x border-slate-100 shadow-2xl"
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50/90 backdrop-blur-md sticky top-0 z-10 flex-shrink-0">
           <div className="flex items-center gap-3">

@@ -59,6 +59,24 @@ body {
   }
 }
 
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
 .animate-scale-up {
   animation: scaleUp 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
@@ -69,6 +87,14 @@ body {
 
 .animate-slide-up {
   animation: slideUp 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-page-push {
+  animation: slideInRight 0.26s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+.animate-page-pop {
+  animation: slideOutRight 0.24s cubic-bezier(0.32, 0.72, 0, 1) forwards;
 }
 
 /* Safe area padding for notch & home indicator on mobile */

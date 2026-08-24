@@ -83,6 +83,14 @@ export default function MusicStudioModal() {
   const [confirmDeleteCloudSong, setConfirmDeleteCloudSong] = useState<Song | null>(null);
   const [confirmResetCache, setConfirmResetCache] = useState(false);
   const [dialogNotice, setDialogNotice] = useState<{ title: string; message: string; type?: 'info' | 'warning' | 'danger' } | null>(null);
+  const [dragOffset, setDragOffset] = useState(0);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+
+  const triggerHaptic = (ms = 10) => {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(ms);
+    }
+  };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -325,8 +333,44 @@ export default function MusicStudioModal() {
       s.album.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Edge Swipe Back gesture
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    if (touch.clientX < 50) {
+      touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchStartRef.current) return;
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - touchStartRef.current.x;
+    const deltaY = touch.clientY - touchStartRef.current.y;
+    if (deltaX > 0 && Math.abs(deltaX) > Math.abs(deltaY)) {
+      setDragOffset(deltaX);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (dragOffset > 75) {
+      triggerHaptic(10);
+      setIsStudioOpen(false);
+    }
+    setDragOffset(0);
+    touchStartRef.current = null;
+  };
+
   return (
-    <div className="fixed inset-0 z-50 bg-white text-slate-900 flex flex-col pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)] animate-slide-up select-none max-w-lg mx-auto border-x border-slate-100 shadow-2xl">
+    <div
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      style={{
+        transform: dragOffset > 0 ? `translateX(${dragOffset}px)` : undefined,
+        transition: dragOffset === 0 ? 'transform 0.2s ease-out' : 'none',
+      }}
+      className="fixed inset-0 z-50 bg-white text-slate-900 flex flex-col pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)] animate-page-push select-none max-w-lg mx-auto border-x border-slate-100 shadow-2xl"
+    >
       {/* Top Native Header */}
       <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/90 backdrop-blur-md sticky top-0 z-10 flex-shrink-0">
         <div className="flex items-center gap-3">

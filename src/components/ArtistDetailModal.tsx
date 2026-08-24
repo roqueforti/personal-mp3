@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { Song } from '@/types/music';
 import { useAudio } from '@/context/AudioContext';
 import {
@@ -28,6 +28,8 @@ export default function ArtistDetailModal({
 }: ArtistDetailModalProps) {
   const { songs, currentSong, isPlaying, playSong, togglePlay } = useAudio();
   const [isFollowing, setIsFollowing] = React.useState(false);
+  const [dragOffset, setDragOffset] = useState(0);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
   if (!artistName) return null;
 
@@ -51,8 +53,44 @@ export default function ArtistDetailModal({
     }
   };
 
+  // Edge Swipe Back gesture (iOS/Flutter Style)
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    if (touch.clientX < 50) {
+      touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchStartRef.current) return;
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - touchStartRef.current.x;
+    const deltaY = touch.clientY - touchStartRef.current.y;
+    if (deltaX > 0 && Math.abs(deltaX) > Math.abs(deltaY)) {
+      setDragOffset(deltaX);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (dragOffset > 75) {
+      triggerHaptic(10);
+      onClose();
+    }
+    setDragOffset(0);
+    touchStartRef.current = null;
+  };
+
   return (
-    <div className="fixed inset-0 z-50 bg-white overflow-y-auto flex flex-col animate-slide-up select-none pt-[env(safe-area-inset-top,0px)] pb-[calc(6rem+env(safe-area-inset-bottom,0px))] max-w-lg mx-auto border-x border-slate-100 shadow-2xl">
+    <div
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      style={{
+        transform: dragOffset > 0 ? `translateX(${dragOffset}px)` : undefined,
+        transition: dragOffset === 0 ? 'transform 0.2s ease-out' : 'none',
+      }}
+      className="fixed inset-0 z-50 bg-white overflow-y-auto flex flex-col animate-page-push select-none pt-[env(safe-area-inset-top,0px)] pb-[calc(6rem+env(safe-area-inset-bottom,0px))] max-w-lg mx-auto border-x border-slate-100 shadow-2xl"
+    >
       {/* Top Navigation Bar with Safe Area */}
       <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b border-slate-100">
         <button
@@ -60,7 +98,7 @@ export default function ArtistDetailModal({
             triggerHaptic(5);
             onClose();
           }}
-          className="p-2 -ml-2 rounded-full hover:bg-slate-100 active:scale-90 text-slate-800 transition-all"
+          className="p-2 -ml-2 rounded-full hover:bg-slate-100 active:scale-90 text-slate-800 transition-all flex items-center gap-1"
         >
           <ChevronLeft className="w-6 h-6 stroke-[2.5]" />
         </button>
