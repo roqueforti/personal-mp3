@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sonicvault-v3-release';
+const CACHE_NAME = 'sonicvault-v4-live';
 
 const CORE_ASSETS = [
   '/',
@@ -9,8 +9,9 @@ const CORE_ASSETS = [
   '/icons/favicon.svg'
 ];
 
-// Pre-cache core shell during SW installation
+// 1. Install Event: Cache core shell and immediately activate
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(CORE_ASSETS).catch((err) => {
@@ -18,10 +19,9 @@ self.addEventListener('install', (event) => {
       });
     })
   );
-  self.skipWaiting();
 });
 
-// Purge any older cache versions automatically on activation
+// 2. Activate Event: Purge old cache versions and claim clients immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -29,23 +29,24 @@ self.addEventListener('activate', (event) => {
         keys
           .filter((k) => k !== CACHE_NAME)
           .map((k) => {
-            console.log('Purging outdated cache version:', k);
+            console.log('Purging outdated cache:', k);
             return caches.delete(k);
           })
       );
-    })
+    }).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
-// Support manual or instant skipWaiting command from client
+// 3. Skip waiting on message
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
 });
 
-// Offline-First + Auto Revalidation Fetch Strategy
+// 4. Fetch Event:
+// - Navigation / HTML: Network-First (Always loads latest deployment on refresh!) with Offline Cache Fallback.
+// - Static Next.js Assets (_next/static/*): Cache-First (Fast load, immutable content-hashed).
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
@@ -61,8 +62,27 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 1. Next.js content-hashed static assets (_next/static/*)
-  // Immutable cache: once cached, serve instantly.
+  // A. Navigation / Document requests (HTML pages) -> NETWORK-FIRST
+  // Guarantees that refreshing ALWAYS fetches the newest Vercel deployment!
+  if (request.mode === 'navigate' || request.destination === 'document' || url.pathname === '/') {
+    event.respondWith(
+      fetch(request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const copy = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+          }
+          return networkResponse;
+        })
+        .catch(() => {
+          // Fallback to offline cache if network is unavailable
+          return caches.match(request).then((cached) => cached || caches.match('/'));
+        })
+    );
+    return;
+  }
+
+  // B. Content-hashed static assets (_next/static/*, /icons/*) -> CACHE-FIRST
   if (url.pathname.startsWith('/_next/static/') || url.pathname.startsWith('/icons/')) {
     event.respondWith(
       caches.match(request).then((cached) => {
@@ -79,43 +99,16 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 2. Navigation / App Shell HTML
-  // Stale-While-Revalidate with deployment update detection
+  // C. Other assets (Network-First with Cache fallback)
   event.respondWith(
-    caches.match(request).then((cachedResponse) => {
-      const fetchPromise = fetch(request)
-        .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            const copy = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(request, copy);
-            });
-
-            // If we had a cached response and the ETag / content changed, notify client
-            if (cachedResponse) {
-              const oldEtag = cachedResponse.headers.get('ETag');
-              const newEtag = networkResponse.headers.get('ETag');
-              if (oldEtag && newEtag && oldEtag !== newEtag) {
-                self.clients.matchAll().then((clients) => {
-                  clients.forEach((client) => {
-                    client.postMessage({ type: 'DEPLOYMENT_UPDATED' });
-                  });
-                });
-              }
-            }
-          }
-          return networkResponse;
-        })
-        .catch(() => {
-          // If offline and requesting navigation, return cached root
-          if (request.mode === 'navigate') {
-            return caches.match('/');
-          }
-          return cachedResponse || new Response('Offline', { status: 503 });
-        });
-
-      // Return cached version immediately for 0ms startup, revalidate in background
-      return cachedResponse || fetchPromise;
-    })
+    fetch(request)
+      .then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200) {
+          const copy = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+        }
+        return networkResponse;
+      })
+      .catch(() => caches.match(request))
   );
 });
