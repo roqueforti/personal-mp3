@@ -42,6 +42,7 @@ export default function SongList({ currentTab = 'home' }: SongListProps) {
     playSong,
     togglePlay,
     setIsUploadOpen,
+    setIsStudioOpen,
     setIsFullPlayerOpen,
     setIsCloudModalOpen,
     activeFilter,
