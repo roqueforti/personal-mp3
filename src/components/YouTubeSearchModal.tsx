@@ -49,6 +49,8 @@ const TRENDING_SEARCHES = [
   'Sheila On 7',
 ];
 
+const DEFAULT_YOUTUBE_API_KEY = 'AIzaSyB9jgibwq-8yHjBwZIcs85b-iJ_TCNnyfQ';
+
 export default function YouTubeSearchModal() {
   const {
     isYouTubeSearchOpen,
@@ -67,14 +69,14 @@ export default function YouTubeSearchModal() {
   const [savedSongIds, setSavedSongIds] = useState<Set<string>>(new Set());
   const [showKeyConfig, setShowKeyConfig] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState('');
-  const [savedApiKey, setSavedApiKey] = useState('');
-  const [hasOfficialYT, setHasOfficialYT] = useState(false);
+  const [savedApiKey, setSavedApiKey] = useState(DEFAULT_YOUTUBE_API_KEY);
+  const [hasOfficialYT, setHasOfficialYT] = useState(true);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load saved API Key from localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const storedKey = localStorage.getItem(YT_KEY_STORAGE) || '';
+      const storedKey = localStorage.getItem(YT_KEY_STORAGE) || DEFAULT_YOUTUBE_API_KEY;
       setSavedApiKey(storedKey);
       setApiKeyInput(storedKey);
     }

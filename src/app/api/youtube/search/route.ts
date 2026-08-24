@@ -140,6 +140,8 @@ async function searchITunes(query: string): Promise<YouTubeSearchResult[]> {
   }
 }
 
+const DEFAULT_YOUTUBE_API_KEY = 'AIzaSyB9jgibwq-8yHjBwZIcs85b-iJ_TCNnyfQ';
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get('q') || '';
@@ -149,7 +151,7 @@ export async function GET(request: NextRequest) {
     clientApiKey ||
     process.env.YOUTUBE_API_KEY ||
     process.env.NEXT_PUBLIC_YOUTUBE_API_KEY ||
-    '';
+    DEFAULT_YOUTUBE_API_KEY;
 
   if (!query.trim()) {
     return NextResponse.json({ success: true, results: [] });
