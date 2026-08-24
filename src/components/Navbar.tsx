@@ -12,6 +12,7 @@ import {
   HardDrive,
   Cloud,
   Database,
+  Youtube,
   X,
 } from 'lucide-react';
 import { formatFileSize } from '@/lib/formatters';
@@ -26,6 +27,7 @@ export default function Navbar() {
     setIsSleepTimerOpen,
     setIsCloudModalOpen,
     setIsStudioOpen,
+    setIsYouTubeSearchOpen,
     isCloudConnected,
     isSyncing,
     sleepTimer,
@@ -39,13 +41,23 @@ export default function Navbar() {
       <div className="max-w-md mx-auto px-4 py-2">
         {/* Top Native Header Row */}
         <div className="flex items-center justify-between gap-3 h-10">
-          {/* Left Action: Search Icon */}
-          <button
-            onClick={() => setIsSearchOpen(!isSearchOpen)}
-            className="p-2 -ml-2 rounded-full text-slate-800 hover:bg-slate-100 transition-colors"
-          >
-            <Search className="w-5 h-5 stroke-[2.5]" />
-          </button>
+          {/* Left Action: Search Icon & YouTube Search */}
+          <div className="flex items-center gap-1 -ml-2">
+            <button
+              onClick={() => setIsSearchOpen(!isSearchOpen)}
+              className="p-2 rounded-full text-slate-800 hover:bg-slate-100 transition-colors"
+              title="Cari Lagu Lokal"
+            >
+              <Search className="w-5 h-5 stroke-[2.5]" />
+            </button>
+            <button
+              onClick={() => setIsYouTubeSearchOpen(true)}
+              className="p-2 rounded-full text-red-600 hover:bg-red-50 transition-colors"
+              title="Cari Musik Online via YouTube"
+            >
+              <Youtube className="w-5 h-5" />
+            </button>
+          </div>
 
           {/* Center Title: MY MUSIC */}
           <h1 className="text-base font-black tracking-wider text-slate-900 uppercase">

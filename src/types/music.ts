@@ -10,6 +10,7 @@ export interface Song {
   blob?: Blob; // Raw audio file (in IndexedDB)
   driveFileId?: string; // Google Drive file ID
   streamUrl?: string; // Streaming audio URL (Supabase CDN / Google Drive / Proxy)
+  youtubeVideoId?: string; // YouTube video ID for online stream
   lyrics?: string;
   genre?: string;
   dateAdded: number; // timestamp

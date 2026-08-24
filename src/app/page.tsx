@@ -11,6 +11,8 @@ import SleepTimerModal from '@/components/SleepTimerModal';
 import PlaylistModal from '@/components/PlaylistModal';
 import CloudSettingsModal from '@/components/CloudSettingsModal';
 import MusicStudioModal from '@/components/MusicStudioModal';
+import YouTubeSearchModal from '@/components/YouTubeSearchModal';
+import YouTubeAudioBridge from '@/components/YouTubeAudioBridge';
 import PWAInstallBanner from '@/components/PWAInstallBanner';
 import PWAUpdateToast from '@/components/PWAUpdateToast';
 import BottomNav from '@/components/BottomNav';
@@ -18,11 +20,18 @@ import { useAudio } from '@/context/AudioContext';
 
 export default function HomePage() {
   const [currentTab, setCurrentTab] = useState<'home' | 'search' | 'library' | 'cloud'>('home');
-  const { setIsPlaylistModalOpen, setIsCloudModalOpen, setSearchQuery } = useAudio();
+  const {
+    setIsPlaylistModalOpen,
+    setIsCloudModalOpen,
+    setIsYouTubeSearchOpen,
+    setSearchQuery,
+  } = useAudio();
 
   const handleTabChange = (tab: 'home' | 'search' | 'library' | 'cloud') => {
     setCurrentTab(tab);
-    if (tab === 'library') {
+    if (tab === 'search') {
+      setIsYouTubeSearchOpen(true);
+    } else if (tab === 'library') {
       setIsPlaylistModalOpen(true);
     } else if (tab === 'cloud') {
       setIsCloudModalOpen(true);
@@ -61,6 +70,8 @@ export default function HomePage() {
       <PlaylistModal />
       <CloudSettingsModal />
       <MusicStudioModal />
+      <YouTubeSearchModal />
+      <YouTubeAudioBridge />
     </main>
   );
 }

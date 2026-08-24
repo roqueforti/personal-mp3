@@ -106,6 +106,8 @@ interface AudioContextType {
   setIsCloudModalOpen: (open: boolean) => void;
   isStudioOpen: boolean;
   setIsStudioOpen: (open: boolean) => void;
+  isYouTubeSearchOpen: boolean;
+  setIsYouTubeSearchOpen: (open: boolean) => void;
   setSongs: React.Dispatch<React.SetStateAction<Song[]>>;
   selectedSongForPlaylist: Song | null;
   setSelectedSongForPlaylist: (song: Song | null) => void;
@@ -158,6 +160,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [isEqualizerOpen, setIsEqualizerOpen] = useState<boolean>(false);
   const [isSleepTimerOpen, setIsSleepTimerOpen] = useState<boolean>(false);
   const [isCloudModalOpen, setIsCloudModalOpen] = useState<boolean>(false);
+  const [isYouTubeSearchOpen, setIsYouTubeSearchOpen] = useState<boolean>(false);
   const [selectedSongForPlaylist, setSelectedSongForPlaylist] = useState<Song | null>(null);
 
   // Cloud & Download state
@@ -302,9 +305,15 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     audio.addEventListener('waiting', () => setIsLoadingAudio(true));
     audio.addEventListener('playing', () => setIsLoadingAudio(false));
     audio.addEventListener('progress', onProgress);
-    audio.addEventListener('error', onError);
+    const onYtTimeUpdate = (e: any) => {
+      if (typeof e.detail?.currentTime === 'number') {
+        setCurrentTime(e.detail.currentTime);
+      }
+    };
+    window.addEventListener('yt-timeupdate', onYtTimeUpdate);
 
     return () => {
+      window.removeEventListener('yt-timeupdate', onYtTimeUpdate);
       audio.removeEventListener('play', onPlay);
       audio.removeEventListener('pause', onPause);
       audio.removeEventListener('timeupdate', onTimeUpdate);
@@ -590,7 +599,16 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         activeBlobUrlRef.current = null;
       }
 
-      // 3. Determine audio source synchronously
+      // 3. If YouTube track, delegate to YouTubeAudioBridge
+      if (song.youtubeVideoId) {
+        if (audioRef.current) audioRef.current.pause();
+        db.incrementPlayCount(song.id).catch(() => {});
+        MediaSessionController.getInstance().updateMetadata(song);
+        MediaSessionController.getInstance().updatePlaybackState('playing');
+        return;
+      }
+
+      // 4. Determine audio source synchronously for local / Supabase songs
       let audioSrc = '';
       if (song.blob) {
         const objectUrl = URL.createObjectURL(song.blob);
@@ -711,11 +729,16 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
   // Toggle Play
   const togglePlay = useCallback(() => {
+    if (currentSong?.youtubeVideoId) {
+      setIsPlaying((prev) => !prev);
+      return;
+    }
+
     if (!audioRef.current) return;
 
     initWebAudio();
     if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
-      audioContextRef.current.resume();
+      audioContextRef.current.resume().catch(() => {});
     }
 
     if (audioRef.current.paused) {
@@ -733,15 +756,22 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
   // Seek
   const seek = useCallback((seconds: number) => {
+    setCurrentTime(seconds);
+    if (currentSong?.youtubeVideoId) {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('yt-seek', { detail: { seconds } }));
+      }
+      return;
+    }
+
     if (!audioRef.current) return;
     audioRef.current.currentTime = seconds;
-    setCurrentTime(seconds);
     MediaSessionController.getInstance().updatePositionState(
       audioRef.current.duration || 0,
       seconds,
       audioRef.current.playbackRate
     );
-  }, []);
+  }, [currentSong?.youtubeVideoId]);
 
   // Volume
   const setVolume = useCallback((vol: number) => {
@@ -1001,6 +1031,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         setIsCloudModalOpen,
         isStudioOpen,
         setIsStudioOpen,
+        isYouTubeSearchOpen,
+        setIsYouTubeSearchOpen,
         setSongs,
         selectedSongForPlaylist,
         setSelectedSongForPlaylist,
