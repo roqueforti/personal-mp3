@@ -103,6 +103,9 @@ interface AudioContextType {
   setIsSleepTimerOpen: (open: boolean) => void;
   isCloudModalOpen: boolean;
   setIsCloudModalOpen: (open: boolean) => void;
+  isStudioOpen: boolean;
+  setIsStudioOpen: (open: boolean) => void;
+  setSongs: React.Dispatch<React.SetStateAction<Song[]>>;
   selectedSongForPlaylist: Song | null;
   setSelectedSongForPlaylist: (song: Song | null) => void;
 
@@ -110,6 +113,7 @@ interface AudioContextType {
   isCloudConnected: boolean;
   isSyncing: boolean;
   syncWithCloud: () => Promise<void>;
+  syncFromCloud: () => Promise<void>;
   downloadSongForOffline: (song: Song) => Promise<boolean>;
   downloadAllSongsForOffline: () => Promise<void>;
   isDownloadingAll: boolean;
@@ -123,6 +127,7 @@ const AudioContext = createContext<AudioContextType | undefined>(undefined);
 
 export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [songs, setSongs] = useState<Song[]>([]);
+  const [isStudioOpen, setIsStudioOpen] = useState(false);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [queue, setQueue] = useState<Song[]>([]);
   const [originalQueue, setOriginalQueue] = useState<Song[]>([]);
@@ -943,11 +948,15 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         setIsSleepTimerOpen,
         isCloudModalOpen,
         setIsCloudModalOpen,
+        isStudioOpen,
+        setIsStudioOpen,
+        setSongs,
         selectedSongForPlaylist,
         setSelectedSongForPlaylist,
         isCloudConnected,
         isSyncing,
         syncWithCloud,
+        syncFromCloud: syncWithCloud,
         downloadSongForOffline,
         downloadAllSongsForOffline,
         isDownloadingAll,

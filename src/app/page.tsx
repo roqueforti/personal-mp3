@@ -10,6 +10,7 @@ import EqualizerModal from '@/components/EqualizerModal';
 import SleepTimerModal from '@/components/SleepTimerModal';
 import PlaylistModal from '@/components/PlaylistModal';
 import CloudSettingsModal from '@/components/CloudSettingsModal';
+import MusicStudioModal from '@/components/MusicStudioModal';
 import PWAInstallBanner from '@/components/PWAInstallBanner';
 import PWAUpdateToast from '@/components/PWAUpdateToast';
 import BottomNav from '@/components/BottomNav';
@@ -59,6 +60,7 @@ export default function HomePage() {
       <SleepTimerModal />
       <PlaylistModal />
       <CloudSettingsModal />
+      <MusicStudioModal />
     </main>
   );
 }

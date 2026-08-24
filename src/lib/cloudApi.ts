@@ -1,4 +1,5 @@
 import { Song, Playlist } from '@/types/music';
+import * as supabase from './supabase';
 
 const APPSCRIPT_STORAGE_KEY = 'sonicvault_appscript_url';
 
@@ -15,8 +16,15 @@ export function setAppScriptUrl(url: string): void {
 }
 
 export function isCloudConfigured(): boolean {
+  if (supabase.isSupabaseConfigured()) return true;
   const url = getAppScriptUrl();
   return Boolean(url && url.startsWith('http'));
+}
+
+export function getCloudProvider(): 'supabase' | 'appscript' | 'none' {
+  if (supabase.isSupabaseConfigured()) return 'supabase';
+  if (getAppScriptUrl()) return 'appscript';
+  return 'none';
 }
 
 // Convert File / Blob to Base64 String
@@ -43,8 +51,12 @@ export function base64ToBlob(base64: string, mimeType = 'audio/mpeg'): Blob {
 // ----------------- Cloud Endpoints ----------------- //
 
 export async function pingCloud(url?: string): Promise<{ success: boolean; message: string }> {
+  if (supabase.isSupabaseConfigured()) {
+    return await supabase.pingSupabase();
+  }
+
   const endpoint = url || getAppScriptUrl();
-  if (!endpoint) return { success: false, message: 'URL Apps Script belum diisi' };
+  if (!endpoint) return { success: false, message: 'URL Cloud / Apps Script belum diisi' };
 
   try {
     const res = await fetch(`${endpoint}?action=ping`, { method: 'GET' });
@@ -59,6 +71,12 @@ export async function pingCloud(url?: string): Promise<{ success: boolean; messa
 }
 
 export async function fetchCloudSongs(): Promise<Song[]> {
+  // 1. Try Supabase
+  if (supabase.isSupabaseConfigured()) {
+    return await supabase.fetchSongsFromSupabase();
+  }
+
+  // 2. Try Apps Script
   const endpoint = getAppScriptUrl();
   if (!endpoint) return [];
 
@@ -76,6 +94,10 @@ export async function fetchCloudSongs(): Promise<Song[]> {
 }
 
 export async function fetchCloudPlaylists(): Promise<Playlist[]> {
+  if (supabase.isSupabaseConfigured()) {
+    return await supabase.fetchPlaylistsFromSupabase();
+  }
+
   const endpoint = getAppScriptUrl();
   if (!endpoint) return [];
 
@@ -93,6 +115,12 @@ export async function fetchCloudPlaylists(): Promise<Playlist[]> {
 }
 
 export function getAudioStreamUrl(song: Song): string {
+  // 1. Direct Supabase CDN or public HTTP streaming URL
+  if (song.streamUrl && !song.streamUrl.includes('drive.google.com') && !song.streamUrl.includes('docs.google.com')) {
+    return song.streamUrl;
+  }
+
+  // 2. Google Drive stream proxy
   const appScriptUrl = getAppScriptUrl();
   const endpointParam = appScriptUrl ? `&endpoint=${encodeURIComponent(appScriptUrl)}` : '';
 

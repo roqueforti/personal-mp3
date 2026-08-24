@@ -9,7 +9,9 @@ export interface Song {
   coverArt?: string; // Data URL or object URL
   blob?: Blob; // Raw audio file (in IndexedDB)
   driveFileId?: string; // Google Drive file ID
-  streamUrl?: string; // Google Drive stream URL
+  streamUrl?: string; // Streaming audio URL (Supabase CDN / Google Drive / Proxy)
+  lyrics?: string;
+  genre?: string;
   dateAdded: number; // timestamp
   playCount: number;
   lastPlayed?: number;

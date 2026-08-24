@@ -11,6 +11,7 @@ import {
   Heart,
   HardDrive,
   Cloud,
+  Database,
   X,
 } from 'lucide-react';
 import { formatFileSize } from '@/lib/formatters';
@@ -24,6 +25,7 @@ export default function Navbar() {
     setIsEqualizerOpen,
     setIsSleepTimerOpen,
     setIsCloudModalOpen,
+    setIsStudioOpen,
     isCloudConnected,
     isSyncing,
     sleepTimer,
@@ -50,8 +52,17 @@ export default function Navbar() {
             My Music
           </h1>
 
-          {/* Right Actions: Cloud & EQ */}
+          {/* Right Actions: Studio, Cloud & EQ */}
           <div className="flex items-center gap-1 -mr-2">
+            {/* Music Studio / Cloud Upload */}
+            <button
+              onClick={() => setIsStudioOpen(true)}
+              title="Music Studio (Upload & Kelola Supabase)"
+              className="p-2 rounded-full text-slate-700 hover:bg-slate-100 transition-colors"
+            >
+              <Database className="w-5 h-5" />
+            </button>
+
             {/* Sleep Timer */}
             {sleepTimer.active && (
               <button

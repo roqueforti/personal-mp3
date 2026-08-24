@@ -10,7 +10,7 @@ interface BottomNavProps {
 }
 
 export default function BottomNav({ currentTab, setCurrentTab }: BottomNavProps) {
-  const { setIsUploadOpen, isCloudConnected } = useAudio();
+  const { setIsStudioOpen, isCloudConnected } = useAudio();
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/80 pb-[env(safe-area-inset-bottom,0px)] shadow-lg">
@@ -37,11 +37,11 @@ export default function BottomNav({ currentTab, setCurrentTab }: BottomNavProps)
           <span className="text-[10px] mt-1">Search</span>
         </button>
 
-        {/* Upload Center Floating Action Button */}
+        {/* Upload & Studio Center Floating Action Button */}
         <button
-          onClick={() => setIsUploadOpen(true)}
-          title="Upload MP3"
-          className="flex items-center justify-center w-11 h-11 rounded-full bg-slate-900 text-white shadow-md hover:bg-black active:scale-95 transition-all -mt-3 border-2 border-white"
+          onClick={() => setIsStudioOpen(true)}
+          title="Music Studio (Upload & Kelola Cloud)"
+          className="flex items-center justify-center w-11 h-11 rounded-full bg-slate-900 text-white shadow-md hover:bg-black active:scale-95 transition-all -mt-3.5 border-2 border-white"
         >
           <Upload className="w-5 h-5 stroke-[2.5]" />
         </button>
