@@ -23,8 +23,10 @@ export default function YouTubeAudioBridge() {
   const playerRef = useRef<any>(null);
   const isReadyRef = useRef<boolean>(false);
   const currentVideoIdRef = useRef<string | null>(null);
+  const repeatModeRef = useRef(repeatMode);
+  repeatModeRef.current = repeatMode;
 
-  // Load YouTube IFrame API script once
+  // Load YouTube IFrame API script reliably
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -41,50 +43,76 @@ export default function YouTubeAudioBridge() {
 
     const initPlayer = () => {
       if (playerRef.current) return;
+      const targetElem = document.getElementById('youtube-audio-bridge-target');
+      if (!targetElem) return;
 
-      playerRef.current = new window.YT.Player('youtube-audio-bridge-container', {
-        height: '0',
-        width: '0',
-        playerVars: {
-          autoplay: 1,
-          controls: 0,
-          disablekb: 1,
-          fs: 0,
-          playsinline: 1,
-          rel: 0,
-          origin: window.location.origin,
-        },
-        events: {
-          onReady: () => {
-            isReadyRef.current = true;
-            if (playerRef.current && typeof playerRef.current.setVolume === 'function') {
-              playerRef.current.setVolume(Math.round(volume * 100));
-            }
+      try {
+        playerRef.current = new window.YT.Player('youtube-audio-bridge-target', {
+          height: '200',
+          width: '200',
+          playerVars: {
+            autoplay: 1,
+            controls: 0,
+            disablekb: 1,
+            fs: 0,
+            playsinline: 1,
+            rel: 0,
+            enablejsapi: 1,
+            origin: window.location.origin,
           },
-          onStateChange: (event: any) => {
-            // YT.PlayerState.ENDED is 0
-            if (event.data === 0) {
-              if (repeatMode === 'one') {
-                if (playerRef.current) {
-                  playerRef.current.seekTo(0);
-                  playerRef.current.playVideo();
-                }
-              } else {
-                playNext();
+          events: {
+            onReady: () => {
+              isReadyRef.current = true;
+              console.log('YouTube Audio Bridge Ready!');
+              if (playerRef.current && typeof playerRef.current.setVolume === 'function') {
+                playerRef.current.setVolume(Math.round(volume * 100));
               }
-            }
+
+              // If a song was already selected before player was ready, load and play it now
+              if (currentVideoIdRef.current) {
+                try {
+                  playerRef.current.loadVideoById({
+                    videoId: currentVideoIdRef.current,
+                    startSeconds: 0,
+                  });
+                  playerRef.current.playVideo();
+                } catch (err) {
+                  console.warn('Deferred YouTube load note:', err);
+                }
+              }
+            },
+            onStateChange: (event: any) => {
+              // 0: ENDED
+              if (event.data === 0) {
+                if (repeatModeRef.current === 'one') {
+                  if (playerRef.current) {
+                    playerRef.current.seekTo(0);
+                    playerRef.current.playVideo();
+                  }
+                } else {
+                  playNext();
+                }
+              }
+            },
+            onError: (e: any) => {
+              console.warn('YouTube Player Event Error:', e.data);
+            },
           },
-        },
-      });
+        });
+      } catch (err) {
+        console.error('Failed to instantiate YouTube Player:', err);
+      }
     };
 
-    if (window.YT && window.YT.Player) {
-      initPlayer();
-    } else {
-      window.onYouTubeIframeAPIReady = () => {
+    const checkAndInit = () => {
+      if (window.YT && window.YT.Player) {
         initPlayer();
-      };
-    }
+      } else {
+        setTimeout(checkAndInit, 150);
+      }
+    };
+
+    checkAndInit();
 
     return () => {
       if (playerRef.current && typeof playerRef.current.destroy === 'function') {
@@ -102,7 +130,6 @@ export default function YouTubeAudioBridge() {
     const videoId = currentSong?.youtubeVideoId;
 
     if (!videoId) {
-      // Pause YouTube player if active when switching to non-YouTube song
       if (playerRef.current && isReadyRef.current && typeof playerRef.current.pauseVideo === 'function') {
         try {
           playerRef.current.pauseVideo();
@@ -112,20 +139,17 @@ export default function YouTubeAudioBridge() {
       return;
     }
 
-    if (videoId !== currentVideoIdRef.current) {
-      currentVideoIdRef.current = videoId;
-      if (playerRef.current && isReadyRef.current) {
-        try {
-          playerRef.current.loadVideoById({
-            videoId,
-            startSeconds: 0,
-          });
-          if (isPlaying) {
-            playerRef.current.playVideo();
-          }
-        } catch (e) {
-          console.warn('YouTube load video note:', e);
-        }
+    currentVideoIdRef.current = videoId;
+
+    if (playerRef.current && isReadyRef.current) {
+      try {
+        playerRef.current.loadVideoById({
+          videoId,
+          startSeconds: 0,
+        });
+        playerRef.current.playVideo();
+      } catch (e) {
+        console.warn('YouTube load video note:', e);
       }
     }
   }, [currentSong?.id, currentSong?.youtubeVideoId]);
@@ -151,10 +175,12 @@ export default function YouTubeAudioBridge() {
 
     const interval = setInterval(() => {
       if (playerRef.current && isReadyRef.current && typeof playerRef.current.getCurrentTime === 'function') {
-        const time = playerRef.current.getCurrentTime();
-        if (Number.isFinite(time)) {
-          window.dispatchEvent(new CustomEvent('yt-timeupdate', { detail: { currentTime: time } }));
-        }
+        try {
+          const time = playerRef.current.getCurrentTime();
+          if (Number.isFinite(time)) {
+            window.dispatchEvent(new CustomEvent('yt-timeupdate', { detail: { currentTime: time } }));
+          }
+        } catch {}
       }
     }, 250);
 
@@ -198,9 +224,10 @@ export default function YouTubeAudioBridge() {
 
   return (
     <div
-      id="youtube-audio-bridge-container"
-      className="hidden pointer-events-none absolute -left-[9999px] -top-[9999px]"
       aria-hidden="true"
-    />
+      className="fixed -bottom-[400px] -right-[400px] w-[200px] h-[200px] opacity-0 pointer-events-none z-[-1] overflow-hidden"
+    >
+      <div id="youtube-audio-bridge-target" />
+    </div>
   );
 }

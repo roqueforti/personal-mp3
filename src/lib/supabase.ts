@@ -265,6 +265,12 @@ export async function fetchSongsFromSupabase(): Promise<Song[]> {
       lyrics: row.lyrics || '',
       favorite: Boolean(row.favorite),
       playCount: Number(row.play_count) || 0,
+      youtubeVideoId:
+        row.id?.startsWith('yt_')
+          ? row.id.replace('yt_', '')
+          : row.stream_url?.includes('youtube.com/watch?v=')
+          ? row.stream_url.split('v=')[1]?.split('&')[0]
+          : undefined,
       dateAdded: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
     }));
   } catch (err) {
