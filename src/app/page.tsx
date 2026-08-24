@@ -12,6 +12,7 @@ import CloudSettingsModal from '@/components/CloudSettingsModal';
 import MusicStudioModal from '@/components/MusicStudioModal';
 import YouTubeSearchModal from '@/components/YouTubeSearchModal';
 import YouTubeAudioBridge from '@/components/YouTubeAudioBridge';
+import BackgroundPlaybackModal from '@/components/BackgroundPlaybackModal';
 import PWAUpdateToast from '@/components/PWAUpdateToast';
 import BottomNav from '@/components/BottomNav';
 import { useAudio } from '@/context/AudioContext';
@@ -88,6 +89,7 @@ export default function HomePage() {
       <MusicStudioModal />
       <YouTubeSearchModal />
       <YouTubeAudioBridge />
+      <BackgroundPlaybackModal />
     </main>
   );
 }

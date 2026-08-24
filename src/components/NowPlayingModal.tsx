@@ -24,6 +24,8 @@ import {
   CheckCircle2,
   Cloud,
   Loader2,
+  Headphones,
+  Sun,
 } from 'lucide-react';
 
 export default function NowPlayingModal() {
@@ -53,6 +55,9 @@ export default function NowPlayingModal() {
     setIsFullPlayerOpen,
     setIsEqualizerOpen,
     setIsSleepTimerOpen,
+    setIsBackgroundModalOpen,
+    isWakeLockActive,
+    toggleWakeLock,
     setSelectedSongForPlaylist,
     setIsPlaylistModalOpen,
     sleepTimer,
@@ -218,6 +223,18 @@ export default function NowPlayingModal() {
                   >
                     <Sliders className="w-4 h-4 text-slate-600" />
                     5-Band Equalizer
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      triggerHaptic(10);
+                      setIsBackgroundModalOpen(true);
+                      setOptionsMenuOpen(false);
+                    }}
+                    className="w-full px-3 py-2.5 rounded-xl text-left flex items-center gap-2.5 hover:bg-slate-100 text-slate-800 active:scale-95"
+                  >
+                    <Headphones className="w-4 h-4 text-indigo-500" />
+                    Putar Saat Layar Mati {isWakeLockActive ? '(Layar Aktif)' : ''}
                   </button>
 
                   <button

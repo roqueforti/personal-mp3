@@ -9,6 +9,8 @@ import {
   Cloud,
   Database,
   X,
+  Headphones,
+  Sun,
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -18,6 +20,8 @@ export default function Navbar() {
     setIsEqualizerOpen,
     setIsSleepTimerOpen,
     setIsCloudModalOpen,
+    setIsBackgroundModalOpen,
+    isWakeLockActive,
     isCloudConnected,
     isSyncing,
     sleepTimer,
@@ -57,7 +61,7 @@ export default function Navbar() {
             </div>
           </div>
 
-          {/* Right Actions: Quick Search, Sleep Timer, Cloud Sync & EQ */}
+          {/* Right Actions: Quick Search, Screen-Off BG Settings, Sleep Timer, Cloud Sync & EQ */}
           <div className="flex items-center gap-1 -mr-1.5">
             {/* Quick In-List Search Toggle */}
             <button
@@ -71,6 +75,21 @@ export default function Navbar() {
               title="Cari Lagu Cepat"
             >
               <Search className="w-4 h-4 stroke-[2.5]" />
+            </button>
+
+            {/* Background & Screen-Off Playback Settings */}
+            <button
+              onClick={() => {
+                triggerHaptic(5);
+                setIsBackgroundModalOpen(true);
+              }}
+              className="relative p-2 rounded-full text-slate-700 hover:bg-slate-100 active:scale-90 transition-transform"
+              title="Pengaturan Putar Saat Layar Mati"
+            >
+              <Headphones className="w-4 h-4" />
+              {isWakeLockActive && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-500 border border-white" />
+              )}
             </button>
 
             {/* Sleep Timer Indicator Pill */}

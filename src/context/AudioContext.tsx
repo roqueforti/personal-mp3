@@ -120,6 +120,12 @@ interface AudioContextType {
   isDownloadingAll: boolean;
   downloadProgress: { current: number; total: number; text: string };
 
+  // Background & Screen-Off Mode
+  isBackgroundModalOpen: boolean;
+  setIsBackgroundModalOpen: (open: boolean) => void;
+  isWakeLockActive: boolean;
+  toggleWakeLock: () => Promise<boolean>;
+
   // Storage stats
   storageInfo: { usedBytes: number; quotaBytes: number; percentage: number; isPersisted: boolean };
 }
@@ -158,7 +164,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [isSleepTimerOpen, setIsSleepTimerOpen] = useState<boolean>(false);
   const [isCloudModalOpen, setIsCloudModalOpen] = useState<boolean>(false);
   const [isYouTubeSearchOpen, setIsYouTubeSearchOpen] = useState<boolean>(false);
+  const [isBackgroundModalOpen, setIsBackgroundModalOpen] = useState<boolean>(false);
   const [selectedSongForPlaylist, setSelectedSongForPlaylist] = useState<Song | null>(null);
+
+  // Screen Wake Lock & Background state
+  const [isWakeLockActive, setIsWakeLockActive] = useState<boolean>(false);
+  const wakeLockSentinelRef = useRef<any>(null);
+  const handleNextTrackRef = useRef<() => void>(() => {});
 
   // Cloud & Download state
   const [isCloudConnected, setIsCloudConnected] = useState<boolean>(false);
@@ -264,7 +276,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      handleNextTrack();
+      if (handleNextTrackRef.current) {
+        handleNextTrackRef.current();
+      }
     };
 
     const onError = () => {
@@ -325,6 +339,69 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       }
     };
   }, []);
+
+  // Screen Wake Lock Handler
+  const toggleWakeLock = useCallback(async (): Promise<boolean> => {
+    if (typeof window === 'undefined' || !('wakeLock' in navigator)) {
+      return false;
+    }
+    try {
+      if (isWakeLockActive) {
+        if (wakeLockSentinelRef.current) {
+          await wakeLockSentinelRef.current.release();
+          wakeLockSentinelRef.current = null;
+        }
+        setIsWakeLockActive(false);
+        return false;
+      } else {
+        const sentinel = await (navigator as any).wakeLock.request('screen');
+        wakeLockSentinelRef.current = sentinel;
+        sentinel.addEventListener('release', () => {
+          setIsWakeLockActive(false);
+          wakeLockSentinelRef.current = null;
+        });
+        setIsWakeLockActive(true);
+        return true;
+      }
+    } catch (err) {
+      console.warn('Wake Lock request error:', err);
+      setIsWakeLockActive(false);
+      return false;
+    }
+  }, [isWakeLockActive]);
+
+  // Background Visibility & AudioContext Watchdog
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible') {
+        // 1. Re-acquire Wake Lock if active
+        if (isWakeLockActive && 'wakeLock' in navigator && !wakeLockSentinelRef.current) {
+          try {
+            const sentinel = await (navigator as any).wakeLock.request('screen');
+            wakeLockSentinelRef.current = sentinel;
+            sentinel.addEventListener('release', () => {
+              setIsWakeLockActive(false);
+              wakeLockSentinelRef.current = null;
+            });
+          } catch (e) {
+            console.warn('Wake Lock re-acquire note:', e);
+          }
+        }
+
+        // 2. Ensure AudioContext is resumed if suspended
+        if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
+          audioContextRef.current.resume().catch(() => {});
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isWakeLockActive]);
 
   // Web Audio Equalizer Setup
   const initWebAudio = () => {
@@ -677,6 +754,27 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           }
         }, 3000);
       }
+
+      // 7. Pre-buffer next track for instant lock-screen background playback
+      const curIndex = effectiveQueue.findIndex((s) => s.id === song.id);
+      if (curIndex !== -1 && curIndex < effectiveQueue.length - 1) {
+        const nextTrack = effectiveQueue[curIndex + 1];
+        if (nextTrack && !nextTrack.blob && nextTrack.streamUrl) {
+          try {
+            const preloadLink = document.createElement('link');
+            preloadLink.rel = 'preload';
+            preloadLink.as = 'fetch';
+            preloadLink.href = nextTrack.streamUrl;
+            preloadLink.crossOrigin = 'anonymous';
+            document.head.appendChild(preloadLink);
+            setTimeout(() => {
+              if (preloadLink.parentNode) {
+                preloadLink.parentNode.removeChild(preloadLink);
+              }
+            }, 15000);
+          } catch {}
+        }
+      }
     },
     [songs, isShuffle, playbackRate, volume]
   );
@@ -701,6 +799,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
     playSong(currentList[nextIdx]);
   }, [playSong]);
+
+  handleNextTrackRef.current = handleNextTrack;
 
   // Play Previous
   const handlePrevTrack = useCallback(() => {
@@ -1023,6 +1123,10 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         setIsStudioOpen,
         isYouTubeSearchOpen,
         setIsYouTubeSearchOpen,
+        isBackgroundModalOpen,
+        setIsBackgroundModalOpen,
+        isWakeLockActive,
+        toggleWakeLock,
         setSongs,
         selectedSongForPlaylist,
         setSelectedSongForPlaylist,
