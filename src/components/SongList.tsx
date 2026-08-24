@@ -100,15 +100,15 @@ export default function SongList({ currentTab = 'home' }: SongListProps) {
           </div>
           <h3 className="text-xl font-extrabold text-slate-900 mb-2 tracking-tight">Vault Masih Kosong</h3>
           <p className="text-slate-500 text-xs max-w-xs mb-6 leading-relaxed">
-            Upload file MP3 favoritmu dari HP atau laptop. Musik tersimpan aman di Google Drive & HP kamu untuk diputar offline!
+            Database Supabase Anda masih kosong. Silakan upload file MP3 Anda ke Supabase via Music Studio, atau coba 2 musik demo di bawah ini!
           </p>
-          <div className="flex flex-col w-full gap-2.5">
+          <div className="flex flex-col w-full gap-2.5 max-w-xs">
             <button
-              onClick={() => setIsUploadOpen(true)}
+              onClick={() => setIsStudioOpen(true)}
               className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl bg-slate-900 hover:bg-black text-white font-bold text-xs transition-transform active:scale-95 shadow-md"
             >
               <Upload className="w-4 h-4" />
-              Upload Lagu MP3
+              Upload Lagu ke Supabase (Music Studio)
             </button>
             <button
               onClick={handleLoadDemoSongs}
@@ -116,7 +116,7 @@ export default function SongList({ currentTab = 'home' }: SongListProps) {
               className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs transition-all shadow-sm"
             >
               <Sparkles className="w-4 h-4 text-amber-500" />
-              {isGeneratingDemo ? 'Membuat Demo Audio...' : 'Coba 2 Musik Demo'}
+              {isGeneratingDemo ? 'Membuat Demo Audio...' : 'Coba 2 Musik Demo Instan'}
             </button>
           </div>
         </div>
