@@ -149,7 +149,24 @@ export default function YouTubeSearchModal() {
     }
   };
 
-  const handlePlayYouTubeTrack = (item: YouTubeSearchResult) => {
+  const handlePlayYouTubeTrack = async (item: YouTubeSearchResult) => {
+    let directStreamUrl = item.streamUrl;
+
+    // If streamUrl not already present, resolve direct audio stream
+    if (!directStreamUrl && item.videoId) {
+      try {
+        const res = await fetch(
+          `/api/youtube/stream?videoId=${item.videoId}&title=${encodeURIComponent(
+            item.title
+          )}&artist=${encodeURIComponent(item.artist)}`
+        );
+        const data = await res.json();
+        if (data.success && data.streamUrl) {
+          directStreamUrl = data.streamUrl;
+        }
+      } catch {}
+    }
+
     const song: Song = {
       id: item.id,
       title: item.title,
@@ -157,10 +174,10 @@ export default function YouTubeSearchModal() {
       album: item.album || 'Online Music',
       duration: item.duration,
       fileSize: 0,
-      mimeType: item.source === 'youtube' ? 'audio/youtube' : 'audio/mp4',
+      mimeType: directStreamUrl ? 'audio/mp4' : (item.source === 'youtube' ? 'audio/youtube' : 'audio/mp4'),
       coverArt: item.thumbnail,
-      youtubeVideoId: item.videoId,
-      streamUrl: item.streamUrl,
+      youtubeVideoId: directStreamUrl ? undefined : item.videoId,
+      streamUrl: directStreamUrl,
       dateAdded: Date.now(),
       playCount: 0,
     };
@@ -175,18 +192,47 @@ export default function YouTubeSearchModal() {
   const handleSaveToVault = async (item: YouTubeSearchResult) => {
     setSavingSongId(item.id);
     try {
+      let directStreamUrl = item.streamUrl;
+      if (!directStreamUrl && item.videoId) {
+        try {
+          const res = await fetch(
+            `/api/youtube/stream?videoId=${item.videoId}&title=${encodeURIComponent(
+              item.title
+            )}&artist=${encodeURIComponent(item.artist)}`
+          );
+          const data = await res.json();
+          if (data.success && data.streamUrl) {
+            directStreamUrl = data.streamUrl;
+          }
+        } catch {}
+      }
+
+      let audioBlob: Blob | undefined = undefined;
+      if (directStreamUrl) {
+        try {
+          const res = await fetch(directStreamUrl);
+          if (res.ok) {
+            const b = await res.blob();
+            if (b && b.size > 1000) {
+              audioBlob = b;
+            }
+          }
+        } catch {}
+      }
+
       const song: Song = {
         id: item.id,
         title: item.title,
         artist: item.artist,
         album: item.album || 'Online Music',
         duration: item.duration,
-        fileSize: 0,
-        mimeType: item.source === 'youtube' ? 'audio/youtube' : 'audio/mp4',
+        fileSize: audioBlob ? audioBlob.size : 0,
+        mimeType: directStreamUrl ? 'audio/mp4' : (item.source === 'youtube' ? 'audio/youtube' : 'audio/mp4'),
         coverArt: item.thumbnail,
-        youtubeVideoId: item.videoId,
+        blob: audioBlob,
+        youtubeVideoId: directStreamUrl ? undefined : item.videoId,
         streamUrl:
-          item.streamUrl || (item.videoId ? `https://www.youtube.com/watch?v=${item.videoId}` : ''),
+          directStreamUrl || (item.videoId ? `https://www.youtube.com/watch?v=${item.videoId}` : ''),
         dateAdded: Date.now(),
         playCount: 0,
       };

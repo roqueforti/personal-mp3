@@ -108,15 +108,13 @@ export default function BackgroundPlaybackModal() {
         <div className="p-4 sm:p-5 overflow-y-auto space-y-4 text-slate-800">
           {/* Status Alert Banner */}
           {isCurrentSongYouTube ? (
-            <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-3">
-              <ShieldAlert className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-              <div className="text-xs leading-relaxed text-amber-900">
-                <span className="font-bold block text-amber-950 mb-0.5">
-                  Lagu YouTube Sedang Diputar:
+            <div className="p-3.5 bg-indigo-50 border border-indigo-200 rounded-2xl flex items-start gap-3">
+              <Sparkles className="w-5 h-5 text-indigo-600 flex-shrink-0 mt-0.5" />
+              <div className="text-xs leading-relaxed text-indigo-900">
+                <span className="font-bold block text-indigo-950 mb-0.5">
+                  Lagu Online / YouTube Sedang Diputar:
                 </span>
-                Browser HP otomatis menjeda video YouTube saat layar dimatikan (kebijakan browser mobile).
-                Untuk putar tanpa henti saat layar mati, putar <strong>Lagu MP3 Lokal</strong> atau{' '}
-                <strong>Cloud Vault</strong>!
+                Sistem secara cerdas menghubungkan lagu ke <strong>Direct Audio Stream</strong> murni agar tetap bisa berputar saat HP dimatikan atau saat membuka aplikasi lain.
               </div>
             </div>
           ) : (
@@ -126,7 +124,7 @@ export default function BackgroundPlaybackModal() {
                 <span className="font-bold text-emerald-950 block">
                   Audio Engine Layar Mati Siap:
                 </span>
-                Lagu MP3 & Cloud Vault aktif dan dapat terus berputar meskipun layar HP dikunci/mati.
+                Lagu MP3 Lokal & Cloud Vault aktif dan dapat terus berputar meskipun layar HP dikunci/mati.
               </div>
             </div>
           )}

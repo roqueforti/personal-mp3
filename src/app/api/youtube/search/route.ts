@@ -140,6 +140,43 @@ async function searchITunes(query: string): Promise<YouTubeSearchResult[]> {
   }
 }
 
+// 3. Deezer Direct Music Search (High-Quality Direct MP3 Audio)
+async function searchDeezer(query: string): Promise<YouTubeSearchResult[]> {
+  try {
+    const url = `https://api.deezer.com/search?q=${encodeURIComponent(query.trim())}&limit=15`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(4000) });
+    if (!res.ok) return [];
+
+    const data = await res.json();
+    if (!data.data || !Array.isArray(data.data)) return [];
+
+    return data.data.map((item: any) => {
+      const thumbnail =
+        item.album?.cover_xl ||
+        item.album?.cover_big ||
+        item.album?.cover_medium ||
+        item.artist?.picture_big ||
+        '';
+
+      return {
+        id: `deezer_${item.id}`,
+        title: item.title || 'Unknown Title',
+        artist: item.artist?.name || 'Unknown Artist',
+        album: item.album?.title || 'Online Track',
+        duration: item.duration || 0,
+        durationFormatted: formatDuration(item.duration || 0),
+        thumbnail,
+        streamUrl: item.preview,
+        source: 'itunes' as const,
+        viewCountText: 'HD Audio',
+      };
+    });
+  } catch (err) {
+    console.warn('Deezer search note:', err);
+    return [];
+  }
+}
+
 const DEFAULT_YOUTUBE_API_KEY = 'AIzaSyB9jgibwq-8yHjBwZIcs85b-iJ_TCNnyfQ';
 
 export async function GET(request: NextRequest) {
@@ -165,13 +202,24 @@ export async function GET(request: NextRequest) {
       ytResults = await searchYouTubeOfficial(query, apiKey);
     }
 
-    // Also fetch iTunes catalog for comprehensive library blending
-    const itunesResults = await searchITunes(query);
+    // Also fetch Deezer & iTunes catalog for direct lock-screen streaming
+    const [deezerResults, itunesResults] = await Promise.all([
+      searchDeezer(query),
+      searchITunes(query),
+    ]);
 
     const merged: YouTubeSearchResult[] = [];
     const seenTitles = new Set<string>();
 
     for (const item of ytResults) {
+      const key = `${item.title.toLowerCase()}_${item.artist.toLowerCase()}`;
+      if (!seenTitles.has(key)) {
+        seenTitles.add(key);
+        merged.push(item);
+      }
+    }
+
+    for (const item of deezerResults) {
       const key = `${item.title.toLowerCase()}_${item.artist.toLowerCase()}`;
       if (!seenTitles.has(key)) {
         seenTitles.add(key);
@@ -191,7 +239,7 @@ export async function GET(request: NextRequest) {
       success: true,
       count: merged.length,
       hasYouTubeOfficial: Boolean(apiKey && ytResults.length > 0),
-      results: merged.slice(0, 30),
+      results: merged.slice(0, 35),
     });
   } catch (err: any) {
     console.error('Unified music search error:', err);
