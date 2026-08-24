@@ -50,12 +50,13 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Ignore non-GET, blob:, data:, chrome-extension:
+  // Ignore non-GET, blob:, data:, chrome-extension:, and /api/ routes
   if (
     request.method !== 'GET' ||
     url.protocol.startsWith('blob:') ||
     url.protocol.startsWith('data:') ||
-    url.protocol.startsWith('chrome-extension:')
+    url.protocol.startsWith('chrome-extension:') ||
+    url.pathname.startsWith('/api/')
   ) {
     return;
   }

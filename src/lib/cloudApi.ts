@@ -92,14 +92,44 @@ export async function fetchCloudPlaylists(): Promise<Playlist[]> {
   }
 }
 
+export function getAudioStreamUrl(song: Song): string {
+  if (song.driveFileId) {
+    return `/api/audio?fileId=${encodeURIComponent(song.driveFileId)}`;
+  }
+  if (song.streamUrl) {
+    const match = song.streamUrl.match(/id=([a-zA-Z0-9_-]+)/);
+    if (match) {
+      return `/api/audio?fileId=${encodeURIComponent(match[1])}`;
+    }
+    return `/api/audio?url=${encodeURIComponent(song.streamUrl)}`;
+  }
+  return '';
+}
+
 export async function fetchSongAudioBlob(driveFileId: string): Promise<Blob | null> {
-  const endpoint = getAppScriptUrl();
   if (!driveFileId) return null;
 
-  // 1. Primary: Fetch through Google Apps Script endpoint
+  // 1. Primary: Fetch through Next.js same-origin API proxy (bypasses browser CORS & handles Google Drive streaming)
+  try {
+    const res = await fetch(`/api/audio?fileId=${encodeURIComponent(driveFileId)}`);
+    if (res.ok) {
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('text/html') && !contentType.includes('application/json')) {
+        const blob = await res.blob();
+        if (blob && blob.size > 5000) {
+          return blob;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Local proxy /api/audio fetch error, attempting Apps Script fallback...', err);
+  }
+
+  // 2. Secondary: Fetch through Google Apps Script endpoint
+  const endpoint = getAppScriptUrl();
   if (endpoint) {
     try {
-      const res = await fetch(`${endpoint}?action=getAudio&fileId=${driveFileId}`, { method: 'GET' });
+      const res = await fetch(`${endpoint}?action=getAudio&fileId=${encodeURIComponent(driveFileId)}`, { method: 'GET' });
       if (res.ok) {
         const data = await res.json();
         if (data.status === 'success' && data.base64) {
@@ -114,11 +144,12 @@ export async function fetchSongAudioBlob(driveFileId: string): Promise<Blob | nu
     }
   }
 
-  // 2. Secondary: Try direct public Google Drive URLs
+  // 3. Tertiary: Try direct public Google Drive URLs
   const directUrls = [
+    `https://drive.usercontent.google.com/download?id=${driveFileId}&export=download&authuser=0`,
+    `https://lh3.googleusercontent.com/d/${driveFileId}`,
     `https://drive.google.com/uc?export=download&id=${driveFileId}`,
-    `https://docs.google.com/uc?export=download&id=${driveFileId}`,
-    `https://lh3.googleusercontent.com/d/${driveFileId}`
+    `https://docs.google.com/uc?export=download&id=${driveFileId}`
   ];
 
   for (const dUrl of directUrls) {
@@ -126,7 +157,6 @@ export async function fetchSongAudioBlob(driveFileId: string): Promise<Blob | nu
       const res = await fetch(dUrl);
       if (res.ok) {
         const blob = await res.blob();
-        // Ensure it's not a small HTML error page
         if (blob && blob.size > 5000) {
           return blob;
         }

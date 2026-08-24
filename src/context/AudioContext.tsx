@@ -191,6 +191,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
     const audio = new Audio();
     audio.preload = 'auto';
+    audio.crossOrigin = 'anonymous';
     audio.setAttribute('playsinline', 'true');
     audio.setAttribute('webkit-playsinline', 'true');
     audioRef.current = audio;
@@ -242,6 +243,11 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       handleNextTrack();
     };
 
+    const onError = () => {
+      console.warn('Audio playback encountered an error or network stall.');
+      setIsLoadingAudio(false);
+    };
+
     audio.addEventListener('play', onPlay);
     audio.addEventListener('pause', onPause);
     audio.addEventListener('timeupdate', onTimeUpdate);
@@ -249,6 +255,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     audio.addEventListener('ended', onEnded);
     audio.addEventListener('waiting', () => setIsLoadingAudio(true));
     audio.addEventListener('playing', () => setIsLoadingAudio(false));
+    audio.addEventListener('error', onError);
 
     return () => {
       audio.removeEventListener('play', onPlay);
@@ -256,6 +263,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       audio.removeEventListener('timeupdate', onTimeUpdate);
       audio.removeEventListener('loadedmetadata', onLoadedMetadata);
       audio.removeEventListener('ended', onEnded);
+      audio.removeEventListener('error', onError);
       if (activeBlobUrlRef.current) {
         URL.revokeObjectURL(activeBlobUrlRef.current);
       }
@@ -515,31 +523,44 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         audioBlob = full?.blob;
       }
 
-      // If not in local IndexedDB, download audio blob from Google Apps Script now
-      if (!audioBlob && song.driveFileId) {
-        try {
-          audioBlob = await cloudApi.fetchSongAudioBlob(song.driveFileId);
-          if (audioBlob) {
-            const updated: Song = { ...song, blob: audioBlob };
-            await db.saveSong(updated);
-            setSongs((prev) => prev.map((s) => (s.id === song.id ? updated : s)));
-            updateStorageStats();
+      let audioSrc = '';
+
+      if (audioBlob) {
+        const objectUrl = URL.createObjectURL(audioBlob);
+        activeBlobUrlRef.current = objectUrl;
+        audioSrc = objectUrl;
+      } else {
+        // Instant streaming playback via Next.js proxy / Drive stream
+        const streamUrl = cloudApi.getAudioStreamUrl(song);
+        if (streamUrl) {
+          audioSrc = streamUrl;
+
+          // Asynchronously download blob in the background for offline capability
+          if (song.driveFileId) {
+            cloudApi
+              .fetchSongAudioBlob(song.driveFileId)
+              .then(async (blob) => {
+                if (blob) {
+                  const updated: Song = { ...song, blob };
+                  await db.saveSong(updated);
+                  setSongs((prev) => prev.map((s) => (s.id === song.id ? updated : s)));
+                  updateStorageStats();
+                }
+              })
+              .catch((err) => {
+                console.warn('Background caching note:', err);
+              });
           }
-        } catch (e) {
-          console.error('Failed to load audio from cloud:', e);
         }
       }
 
-      if (!audioBlob) {
-        alert(`Sedang memuat audio "${song.title}" dari Google Drive, pastikan internet aktif atau buka menu Cloud.`);
+      if (!audioSrc) {
+        console.warn(`Data audio untuk "${song.title}" tidak ditemukan.`);
         setIsLoadingAudio(false);
         return;
       }
 
-      const objectUrl = URL.createObjectURL(audioBlob);
-      activeBlobUrlRef.current = objectUrl;
-      audioRef.current.src = objectUrl;
-
+      audioRef.current.src = audioSrc;
       audioRef.current.playbackRate = playbackRate;
       audioRef.current.volume = volume;
 
