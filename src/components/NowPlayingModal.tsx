@@ -76,9 +76,9 @@ export default function NowPlayingModal() {
   const speedOptions = [0.75, 1.0, 1.25, 1.5, 2.0];
 
   return (
-    <div className="fixed inset-0 z-50 bg-white flex flex-col justify-between overflow-y-auto safe-area-bottom safe-area-top select-none text-slate-900 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 bg-white flex flex-col justify-between overflow-y-auto pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)] select-none text-slate-900 animate-in fade-in duration-200">
       {/* Top Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-white">
+      <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 bg-white">
         <button
           onClick={() => setIsFullPlayerOpen(false)}
           className="p-2 -ml-2 rounded-full text-slate-800 hover:bg-slate-100 transition-colors"
@@ -252,7 +252,7 @@ export default function NowPlayingModal() {
               )}
 
               {/* Main Center Active Card */}
-              <div className="relative w-64 h-64 sm:w-72 sm:h-72 rounded-3xl overflow-hidden bg-slate-100 shadow-xl shadow-slate-200/80 border border-slate-100 z-10 flex items-center justify-center">
+              <div className="relative w-56 h-56 sm:w-64 sm:h-64 rounded-3xl overflow-hidden bg-slate-100 shadow-xl shadow-slate-200/80 border border-slate-100 z-10 flex items-center justify-center">
                 {currentSong.coverArt ? (
                   <img
                     src={currentSong.coverArt}

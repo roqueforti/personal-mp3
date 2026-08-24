@@ -91,7 +91,7 @@ export default function SongList({ currentTab = 'home' }: SongListProps) {
   }, [filteredSongs, activeTabFilter]);
 
   return (
-    <div className="max-w-md mx-auto px-4 pt-3 pb-40 space-y-6">
+    <div className="max-w-md mx-auto px-4 pt-2 pb-[calc(12rem+env(safe-area-inset-bottom,0px))] space-y-5">
       {/* Empty State */}
       {songs.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 px-4 text-center">

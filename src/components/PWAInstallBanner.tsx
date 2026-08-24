@@ -61,9 +61,9 @@ export default function PWAInstallBanner() {
   }
 
   return (
-    <div className="fixed top-16 left-4 right-4 max-w-md mx-auto z-40 bg-white border border-slate-200 rounded-3xl p-3.5 shadow-xl animate-fade-in flex items-center justify-between gap-3">
+    <div className="w-full bg-white border border-slate-200/90 rounded-3xl p-3.5 shadow-sm animate-fade-in flex items-center justify-between gap-3 mb-1">
       <div className="flex items-center gap-3 min-w-0">
-        <div className="w-10 h-10 rounded-2xl bg-slate-900 flex items-center justify-center flex-shrink-0 text-white shadow-sm">
+        <div className="w-10 h-10 rounded-2xl bg-slate-900 flex items-center justify-center flex-shrink-0 text-white shadow-xs">
           <Smartphone className="w-5 h-5" />
         </div>
         <div className="min-w-0">
@@ -82,13 +82,14 @@ export default function PWAInstallBanner() {
       <div className="flex items-center gap-1.5 flex-shrink-0">
         <button
           onClick={handleInstallClick}
-          className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold transition-all shadow-sm"
+          className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold transition-all shadow-xs"
         >
           {isIOS ? 'Petunjuk' : 'Install'}
         </button>
         <button
           onClick={() => setIsDismissed(true)}
           className="p-1.5 text-slate-400 hover:text-slate-900 rounded-full"
+          title="Tutup"
         >
           <X className="w-4 h-4" />
         </button>

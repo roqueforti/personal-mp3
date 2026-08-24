@@ -26,7 +26,7 @@ export default function MiniPlayer() {
   const buffered = Math.min(100, Math.max(progress, bufferedPercentage));
 
   return (
-    <div className="fixed bottom-16 left-3 right-3 max-w-md mx-auto z-40 bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-3xl shadow-xl overflow-hidden animate-slide-up select-none">
+    <div className="fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px))] left-3 right-3 max-w-md mx-auto z-40 bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-3xl shadow-xl overflow-hidden animate-slide-up select-none">
       {/* Top Dual Progress Line (Buffered + Played) */}
       <div className="w-full h-1 bg-slate-100 relative overflow-hidden">
         {/* Buffered Chunk Bar */}

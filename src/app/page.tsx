@@ -35,14 +35,14 @@ export default function HomePage() {
       {/* Top Native Mobile Header */}
       <Navbar />
 
-      {/* PWA Mobile Install Banner */}
-      <PWAInstallBanner />
-
       {/* PWA Auto Update Notification Toast */}
       <PWAUpdateToast />
 
       {/* Main Content Area */}
       <section className="flex-1 w-full overflow-x-hidden">
+        <div className="max-w-md mx-auto px-4 pt-2.5">
+          <PWAInstallBanner />
+        </div>
         <SongList currentTab={currentTab} />
       </section>
 

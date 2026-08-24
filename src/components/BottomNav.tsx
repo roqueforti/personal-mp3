@@ -13,8 +13,8 @@ export default function BottomNav({ currentTab, setCurrentTab }: BottomNavProps)
   const { setIsUploadOpen, isCloudConnected } = useAudio();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 py-1 px-4 safe-area-bottom">
-      <div className="max-w-md mx-auto flex items-center justify-around h-14">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/80 pb-[env(safe-area-inset-bottom,0px)] shadow-lg">
+      <div className="max-w-md mx-auto flex items-center justify-around h-14 px-2">
         {/* Home */}
         <button
           onClick={() => setCurrentTab('home')}

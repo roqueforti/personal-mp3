@@ -33,8 +33,8 @@ export default function Navbar() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-100/80">
-      <div className="max-w-md mx-auto px-4 py-3">
+    <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-100/80 pt-[env(safe-area-inset-top,0px)]">
+      <div className="max-w-md mx-auto px-4 py-2">
         {/* Top Native Header Row */}
         <div className="flex items-center justify-between gap-3 h-10">
           {/* Left Action: Search Icon */}
