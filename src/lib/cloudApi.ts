@@ -93,13 +93,16 @@ export async function fetchCloudPlaylists(): Promise<Playlist[]> {
 }
 
 export function getAudioStreamUrl(song: Song): string {
+  const appScriptUrl = getAppScriptUrl();
+  const endpointParam = appScriptUrl ? `&endpoint=${encodeURIComponent(appScriptUrl)}` : '';
+
   if (song.driveFileId) {
-    return `/api/audio?fileId=${encodeURIComponent(song.driveFileId)}`;
+    return `/api/audio?fileId=${encodeURIComponent(song.driveFileId)}${endpointParam}`;
   }
   if (song.streamUrl) {
     const match = song.streamUrl.match(/id=([a-zA-Z0-9_-]+)/);
     if (match) {
-      return `/api/audio?fileId=${encodeURIComponent(match[1])}`;
+      return `/api/audio?fileId=${encodeURIComponent(match[1])}${endpointParam}`;
     }
     return `/api/audio?url=${encodeURIComponent(song.streamUrl)}`;
   }
@@ -109,9 +112,12 @@ export function getAudioStreamUrl(song: Song): string {
 export async function fetchSongAudioBlob(driveFileId: string): Promise<Blob | null> {
   if (!driveFileId) return null;
 
+  const endpoint = getAppScriptUrl();
+  const endpointParam = endpoint ? `&endpoint=${encodeURIComponent(endpoint)}` : '';
+
   // 1. Primary: Fetch through Next.js same-origin API proxy (bypasses browser CORS & handles Google Drive streaming)
   try {
-    const res = await fetch(`/api/audio?fileId=${encodeURIComponent(driveFileId)}`);
+    const res = await fetch(`/api/audio?fileId=${encodeURIComponent(driveFileId)}${endpointParam}`);
     if (res.ok) {
       const contentType = res.headers.get('content-type') || '';
       if (!contentType.includes('text/html') && !contentType.includes('application/json')) {
@@ -126,7 +132,6 @@ export async function fetchSongAudioBlob(driveFileId: string): Promise<Blob | nu
   }
 
   // 2. Secondary: Fetch through Google Apps Script endpoint
-  const endpoint = getAppScriptUrl();
   if (endpoint) {
     try {
       const res = await fetch(`${endpoint}?action=getAudio&fileId=${encodeURIComponent(driveFileId)}`, { method: 'GET' });
