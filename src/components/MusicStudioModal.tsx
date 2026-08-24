@@ -82,6 +82,7 @@ export default function MusicStudioModal() {
   const [deletingSongId, setDeletingSongId] = useState<string | null>(null);
   const [confirmDeleteCloudSong, setConfirmDeleteCloudSong] = useState<Song | null>(null);
   const [confirmResetCache, setConfirmResetCache] = useState(false);
+  const [dialogNotice, setDialogNotice] = useState<{ title: string; message: string; type?: 'info' | 'warning' | 'danger' } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -175,7 +176,11 @@ export default function MusicStudioModal() {
   const handleUploadSingle = async (staged: StagedUpload) => {
     if (!isConfigured) {
       setActiveTab('config');
-      alert('Silakan hubungkan Supabase terlebih dahulu di tab Konfigurasi Supabase.');
+      setDialogNotice({
+        title: 'Hubungkan Supabase',
+        message: 'Silakan isi Supabase Project URL dan Anon Key di tab Setup terlebih dahulu.',
+        type: 'warning',
+      });
       return;
     }
 
@@ -238,7 +243,11 @@ export default function MusicStudioModal() {
   const handleUploadAll = async () => {
     if (!isConfigured) {
       setActiveTab('config');
-      alert('Silakan hubungkan Supabase terlebih dahulu di tab Konfigurasi Supabase.');
+      setDialogNotice({
+        title: 'Hubungkan Supabase',
+        message: 'Silakan isi Supabase Project URL dan Anon Key di tab Setup terlebih dahulu.',
+        type: 'warning',
+      });
       return;
     }
 
@@ -254,7 +263,11 @@ export default function MusicStudioModal() {
 
   const handleSaveConfig = async () => {
     if (!supabaseUrl.trim() || !supabaseKey.trim()) {
-      alert('Mohon isi Supabase Project URL dan Anon Key');
+      setDialogNotice({
+        title: 'Form Belum Lengkap',
+        message: 'Mohon isi Supabase Project URL dan Anon Key dengan benar.',
+        type: 'warning',
+      });
       return;
     }
 
@@ -295,7 +308,11 @@ export default function MusicStudioModal() {
       setSongs((prev) => prev.map((s) => (s.id === editingSong.id ? editingSong : s)));
       setEditingSong(null);
     } catch (e) {
-      alert('Gagal memperbarui metadata lagu.');
+      setDialogNotice({
+        title: 'Gagal Menyimpan',
+        message: 'Terjadi kesalahan saat menyimpan perubahan metadata lagu ke Supabase.',
+        type: 'danger',
+      });
     } finally {
       setIsSavingEdit(false);
     }
@@ -309,28 +326,28 @@ export default function MusicStudioModal() {
   );
 
   return (
-    <div className="fixed inset-0 z-50 bg-white text-slate-900 flex flex-col pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)] animate-in slide-in-from-right duration-200 select-none max-w-lg mx-auto border-x border-slate-100 shadow-2xl">
+    <div className="fixed inset-0 z-50 bg-white text-slate-900 flex flex-col pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)] animate-slide-up select-none max-w-lg mx-auto border-x border-slate-100 shadow-2xl">
       {/* Top Native Header */}
-      <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-900 text-white sticky top-0 z-10 flex-shrink-0">
+      <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/90 backdrop-blur-md sticky top-0 z-10 flex-shrink-0">
         <div className="flex items-center gap-3">
           <button
             onClick={() => setIsStudioOpen(false)}
-            className="p-2 -ml-2 rounded-full text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+            className="p-2 -ml-2 rounded-full text-slate-800 hover:bg-slate-200/50 active:scale-90 transition-transform"
             title="Kembali"
           >
             <ArrowLeft className="w-5 h-5 stroke-[2.5]" />
           </button>
-          <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-xl bg-slate-900 flex items-center justify-center text-white shadow-2xs">
             <Database className="w-4 h-4" />
           </div>
           <div>
-            <h2 className="text-sm font-black tracking-tight flex items-center gap-1.5">
+            <h2 className="text-sm font-extrabold text-slate-900 tracking-tight flex items-center gap-1.5">
               <span>Music Studio</span>
-              <span className="px-1.5 py-0.2 rounded-full text-[9px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-700">
                 Cloud
               </span>
             </h2>
-            <p className="text-[10px] text-slate-400 font-medium truncate">
+            <p className="text-[10px] text-slate-500 font-medium truncate">
               Upload, edit & kelola database Supabase
             </p>
           </div>
@@ -338,20 +355,21 @@ export default function MusicStudioModal() {
 
         <button
           onClick={() => setIsStudioOpen(false)}
-          className="p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 transition-colors"
+          className="p-2 text-slate-400 hover:text-slate-900 rounded-full hover:bg-slate-200/50 active:scale-90 transition-transform"
         >
           <X className="w-5 h-5" />
         </button>
       </div>
 
-        {/* Navigation Tabs (Fully Responsive Grid on Mobile) */}
-        <div className="grid grid-cols-3 border-b border-slate-100 bg-slate-50 px-2 pt-2 gap-1.5 flex-shrink-0">
+      {/* iOS/Flutter Native Segmented Control Tabs */}
+      <div className="px-4 pt-3 pb-1 flex-shrink-0 bg-white">
+        <div className="grid grid-cols-3 bg-slate-100 p-1 rounded-2xl gap-1 shadow-2xs">
           <button
             onClick={() => setActiveTab('upload')}
-            className={`flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-t-xl text-xs font-bold transition-all truncate ${
+            className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold transition-all truncate active:scale-95 ${
               activeTab === 'upload'
-                ? 'bg-white text-slate-900 border-t-2 border-slate-900 shadow-xs'
-                : 'text-slate-500 hover:text-slate-900'
+                ? 'bg-white text-slate-900 shadow-xs'
+                : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             <Upload className="w-3.5 h-3.5 flex-shrink-0" />
@@ -360,10 +378,10 @@ export default function MusicStudioModal() {
 
           <button
             onClick={() => setActiveTab('library')}
-            className={`flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-t-xl text-xs font-bold transition-all truncate ${
+            className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold transition-all truncate active:scale-95 ${
               activeTab === 'library'
-                ? 'bg-white text-slate-900 border-t-2 border-slate-900 shadow-xs'
-                : 'text-slate-500 hover:text-slate-900'
+                ? 'bg-white text-slate-900 shadow-xs'
+                : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             <Layers className="w-3.5 h-3.5 flex-shrink-0" />
@@ -372,10 +390,10 @@ export default function MusicStudioModal() {
 
           <button
             onClick={() => setActiveTab('config')}
-            className={`flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-t-xl text-xs font-bold transition-all truncate ${
+            className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold transition-all truncate active:scale-95 ${
               activeTab === 'config'
-                ? 'bg-white text-slate-900 border-t-2 border-slate-900 shadow-xs'
-                : 'text-slate-500 hover:text-slate-900'
+                ? 'bg-white text-slate-900 shadow-xs'
+                : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             <Cloud className="w-3.5 h-3.5 flex-shrink-0" />
@@ -383,6 +401,7 @@ export default function MusicStudioModal() {
             {isConfigured && <span className="w-2 h-2 rounded-full bg-emerald-500" />}
           </button>
         </div>
+      </div>
 
         {/* Content Body */}
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
@@ -880,6 +899,18 @@ export default function MusicStudioModal() {
             await syncFromCloud();
           }}
           onCancel={() => setConfirmResetCache(false)}
+        />
+
+        {/* Generic Dialog Notice (Replaces browser alert) */}
+        <NativeConfirmModal
+          isOpen={Boolean(dialogNotice)}
+          title={dialogNotice?.title || 'Pemberitahuan'}
+          message={dialogNotice?.message || ''}
+          confirmText="Mengerti"
+          cancelText="Tutup"
+          type={dialogNotice?.type || 'info'}
+          onConfirm={() => setDialogNotice(null)}
+          onCancel={() => setDialogNotice(null)}
         />
       </div>
     );
