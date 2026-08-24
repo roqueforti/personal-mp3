@@ -1,14 +1,17 @@
 {
   "name": "SonicVault - Personal MP3 Player",
   "short_name": "SonicVault",
-  "description": "Unlimited personal MP3 music player with lock screen background playback and offline PWA support.",
+  "description": "Unlimited personal MP3 music player with lock screen background playback, YouTube streaming, and offline vault.",
   "start_url": "/",
+  "scope": "/",
   "id": "/",
   "display": "standalone",
+  "display_override": ["standalone", "window-controls-overlay", "minimal-ui"],
   "background_color": "#090d16",
   "theme_color": "#090d16",
   "orientation": "portrait-primary",
-  "categories": ["music", "entertainment", "audio"],
+  "categories": ["music", "entertainment", "audio", "utilities"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icons/icon-192x192.png",
@@ -31,10 +34,10 @@
   ],
   "shortcuts": [
     {
-      "name": "Upload Music",
-      "short_name": "Upload",
-      "description": "Upload new MP3 songs to your vault",
-      "url": "/?action=upload",
+      "name": "Search Music",
+      "short_name": "Search",
+      "description": "Search and stream music online",
+      "url": "/?action=search",
       "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
     },
     {
