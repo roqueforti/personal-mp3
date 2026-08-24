@@ -1,40 +1,66 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
+    <!-- Background Gradient: Deep Obsidian Slate matching the app's dark elements -->
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#1e1b4b"/>
-      <stop offset="50%" stop-color="#0f172a"/>
-      <stop offset="100%" stop-color="#090d16"/>
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="60%" stop-color="#090d16"/>
+      <stop offset="100%" stop-color="#020617"/>
     </linearGradient>
-    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#818cf8"/>
-      <stop offset="50%" stop-color="#6366f1"/>
-      <stop offset="100%" stop-color="#4f46e5"/>
+
+    <!-- Inner Glow & Soundwave Accent -->
+    <linearGradient id="accentGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="50%" stop-color="#e2e8f0"/>
+      <stop offset="100%" stop-color="#94a3b8"/>
     </linearGradient>
-    <linearGradient id="glowGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#38bdf8"/>
-      <stop offset="100%" stop-color="#818cf8"/>
+
+    <!-- Subtle Premium Highlight -->
+    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#334155" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#1e293b" stop-opacity="0.3"/>
     </linearGradient>
   </defs>
+
+  <!-- Rounded App Icon Squircle Base -->
+  <rect width="512" height="512" rx="118" fill="url(#bgGrad)"/>
   
-  <!-- Rounded Base -->
-  <rect width="512" height="512" rx="110" fill="url(#bgGrad)"/>
-  
-  <!-- Outer Ring Accent -->
-  <circle cx="256" cy="256" r="190" stroke="#1e293b" stroke-width="8" fill="none" opacity="0.6"/>
-  <circle cx="256" cy="256" r="140" stroke="#334155" stroke-width="4" stroke-dasharray="10 15" fill="none" opacity="0.5"/>
+  <!-- Subtle Outer Border Accent -->
+  <rect x="6" y="6" width="500" height="500" rx="112" fill="none" stroke="#334155" stroke-width="3" stroke-opacity="0.4"/>
 
-  <!-- Center Vinyl/Speaker Ring -->
-  <circle cx="256" cy="256" r="95" fill="#131c31" stroke="url(#accentGrad)" stroke-width="6"/>
+  <!-- Minimalist Vinyl Grooves -->
+  <circle cx="256" cy="256" r="185" stroke="url(#ringGrad)" stroke-width="4" fill="none"/>
+  <circle cx="256" cy="256" r="145" stroke="url(#ringGrad)" stroke-width="2.5" stroke-dasharray="12 8" fill="none" stroke-opacity="0.6"/>
+  <circle cx="256" cy="256" r="105" stroke="url(#ringGrad)" stroke-width="3" fill="none"/>
 
-  <!-- Music Note / Soundwave glyph -->
-  <path d="M220 330 C220 350 200 365 175 365 C150 365 130 350 130 330 C130 310 150 295 175 295 C190 295 205 300 214 310 L214 185 C214 175 222 168 232 169 L332 184 C340 185 346 192 346 200 L346 290 C346 310 326 325 301 325 C276 325 256 310 256 290 C256 270 276 255 301 255 C316 255 330 260 339 270 L339 220 L220 202 Z" fill="url(#glowGrad)"/>
+  <!-- Center Core Ring -->
+  <circle cx="256" cy="256" r="68" fill="#090d16" stroke="#475569" stroke-width="3.5"/>
 
-  <!-- Wave bars -->
-  <rect x="380" y="220" width="10" height="72" rx="5" fill="#6366f1" opacity="0.9"/>
-  <rect x="400" y="200" width="10" height="112" rx="5" fill="#818cf8" opacity="0.8"/>
-  <rect x="420" y="235" width="10" height="42" rx="5" fill="#4f46e5" opacity="0.7"/>
+  <!-- Modern Stylized Music Note & Sound Wave in Crisp Titanium White -->
+  <g fill="url(#accentGlow)">
+    <!-- Note Head 1 (Left) -->
+    <circle cx="205" cy="310" r="32"/>
+    <!-- Note Head 2 (Right) -->
+    <circle cx="305" cy="275" r="32"/>
 
-  <rect x="100" y="220" width="10" height="72" rx="5" fill="#6366f1" opacity="0.9"/>
-  <rect x="80" y="200" width="10" height="112" rx="5" fill="#818cf8" opacity="0.8"/>
-  <rect x="60" y="235" width="10" height="42" rx="5" fill="#4f46e5" opacity="0.7"/>
+    <!-- Left Stem -->
+    <rect x="225" y="155" width="14" height="155" rx="7"/>
+    <!-- Right Stem -->
+    <rect x="325" y="125" width="14" height="150" rx="7"/>
+
+    <!-- Top Connecting Beam -->
+    <path d="M225 155 L339 125 L339 155 L225 185 Z"/>
+  </g>
+
+  <!-- Left Soundwave Bars (Minimalist Slate) -->
+  <rect x="80" y="226" width="8" height="60" rx="4" fill="#64748b" opacity="0.8"/>
+  <rect x="98" y="200" width="8" height="112" rx="4" fill="#94a3b8" opacity="0.9"/>
+  <rect x="116" y="240" width="8" height="32" rx="4" fill="#475569" opacity="0.7"/>
+
+  <!-- Right Soundwave Bars (Minimalist Slate) -->
+  <rect x="388" y="240" width="8" height="32" rx="4" fill="#475569" opacity="0.7"/>
+  <rect x="406" y="200" width="8" height="112" rx="4" fill="#94a3b8" opacity="0.9"/>
+  <rect x="424" y="226" width="8" height="60" rx="4" fill="#64748b" opacity="0.8"/>
+
+  <!-- Center Vinyl Dot -->
+  <circle cx="256" cy="256" r="14" fill="#f8fafc"/>
 </svg>

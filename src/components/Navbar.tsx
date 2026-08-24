@@ -59,10 +59,21 @@ export default function Navbar() {
             </button>
           </div>
 
-          {/* Center Title: MY MUSIC */}
-          <h1 className="text-base font-black tracking-wider text-slate-900 uppercase">
-            My Music
-          </h1>
+          {/* Center Title: MY MUSIC with matching logo */}
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-xl bg-slate-900 flex items-center justify-center text-white shadow-2xs flex-shrink-0">
+              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-white">
+                <circle cx="8" cy="17" r="3" />
+                <circle cx="16" cy="14" r="3" />
+                <rect x="10" y="5" width="2" height="12" />
+                <rect x="18" y="2" width="2" height="12" />
+                <path d="M10 7 L19 4 L19 7 L10 10 Z" />
+              </svg>
+            </div>
+            <h1 className="text-sm font-black tracking-wider text-slate-900 uppercase">
+              My Music
+            </h1>
+          </div>
 
           {/* Right Actions: Studio, Cloud & EQ */}
           <div className="flex items-center gap-1 -mr-2">
