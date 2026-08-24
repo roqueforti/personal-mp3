@@ -21,13 +21,16 @@ import {
 
 interface YouTubeSearchResult {
   id: string;
-  videoId: string;
+  videoId?: string;
   title: string;
   artist: string;
+  album?: string;
   duration: number;
   durationFormatted: string;
   thumbnail: string;
-  viewCountText: string;
+  streamUrl?: string;
+  source: 'youtube' | 'itunes';
+  viewCountText?: string;
 }
 
 const TRENDING_SEARCHES = [
@@ -93,7 +96,7 @@ export default function YouTubeSearchModal() {
     if (val.trim().length >= 2) {
       debounceRef.current = setTimeout(() => {
         handleSearch(val);
-      }, 500);
+      }, 400);
     }
   };
 
@@ -102,12 +105,13 @@ export default function YouTubeSearchModal() {
       id: item.id,
       title: item.title,
       artist: item.artist,
-      album: 'YouTube Music',
+      album: item.album || 'Online Music',
       duration: item.duration,
       fileSize: 0,
-      mimeType: 'audio/youtube',
+      mimeType: item.source === 'youtube' ? 'audio/youtube' : 'audio/mp4',
       coverArt: item.thumbnail,
       youtubeVideoId: item.videoId,
+      streamUrl: item.streamUrl,
       dateAdded: Date.now(),
       playCount: 0,
     };
@@ -123,16 +127,17 @@ export default function YouTubeSearchModal() {
     setSavingSongId(item.id);
     try {
       const song: Song = {
-        id: 'yt_' + item.videoId,
+        id: item.id,
         title: item.title,
         artist: item.artist,
-        album: 'YouTube Music',
+        album: item.album || 'Online Music',
         duration: item.duration,
         fileSize: 0,
-        mimeType: 'audio/youtube',
+        mimeType: item.source === 'youtube' ? 'audio/youtube' : 'audio/mp4',
         coverArt: item.thumbnail,
         youtubeVideoId: item.videoId,
-        streamUrl: `https://www.youtube.com/watch?v=${item.videoId}`,
+        streamUrl:
+          item.streamUrl || (item.videoId ? `https://www.youtube.com/watch?v=${item.videoId}` : ''),
         dateAdded: Date.now(),
         playCount: 0,
       };
