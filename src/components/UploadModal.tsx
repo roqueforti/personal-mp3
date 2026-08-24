@@ -9,6 +9,7 @@ import { Song } from '@/types/music';
 import { formatFileSize, formatTime } from '@/lib/formatters';
 import {
   X,
+  ArrowLeft,
   Upload,
   Music,
   CheckCircle2,
@@ -98,23 +99,24 @@ export default function UploadModal() {
             }
           }
         }
-        await refreshSongs();
       }
 
+      await refreshSongs();
+      setIsUploadOpen(false);
       setSelectedFiles([]);
       setParsedSongs([]);
-      setIsUploadOpen(false);
-    } catch (err) {
-      console.error('Gagal menyimpan file audio:', err);
-      alert('Gagal menyimpan audio ke database. Pastikan memori browser cukup.');
+    } catch (e) {
+      console.error('Failed to save to vault:', e);
+      alert('Gagal menyimpan beberapa lagu ke storage.');
     } finally {
       setIsSaving(false);
       setProgressText('');
     }
   };
 
-  const removeParsedSong = (index: number) => {
-    setParsedSongs((prev) => prev.filter((_, i) => i !== index));
+  const handleRemoveSong = (idx: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== idx));
+    setParsedSongs((prev) => prev.filter((_, i) => i !== idx));
   };
 
   const handleDrag = (e: React.DragEvent) => {
@@ -137,156 +139,141 @@ export default function UploadModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-      <div className="bg-white border border-slate-200 w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-slate-900 flex items-center justify-center text-white">
-              <Upload className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-slate-900 leading-tight">Upload Lagu ke Vault</h3>
-              <p className="text-xs text-slate-500 font-medium">Bebas upload, tersimpan offline di HP/Laptop</p>
-            </div>
-          </div>
-
+    <div className="fixed inset-0 z-50 bg-white text-slate-900 flex flex-col pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)] animate-in slide-in-from-right duration-200 select-none max-w-lg mx-auto border-x border-slate-100 shadow-2xl">
+      {/* Native Mobile Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50/90 backdrop-blur-md sticky top-0 z-10 flex-shrink-0">
+        <div className="flex items-center gap-3">
           <button
             onClick={() => setIsUploadOpen(false)}
-            className="p-2 rounded-full text-slate-400 hover:text-slate-900 hover:bg-slate-200/60 transition-colors"
+            className="p-2 -ml-2 rounded-full text-slate-800 hover:bg-slate-200/50 transition-colors"
+            title="Kembali"
           >
-            <X className="w-5 h-5" />
+            <ArrowLeft className="w-5 h-5 stroke-[2.5]" />
           </button>
+          <div className="w-8 h-8 rounded-xl bg-slate-900 flex items-center justify-center text-white">
+            <Upload className="w-4 h-4" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-slate-900 leading-tight">Upload Lagu ke Vault</h3>
+            <p className="text-[10px] text-slate-500 font-medium truncate">Simpan offline & sinkronkan ke Cloud</p>
+          </div>
         </div>
 
-        {/* Content Body */}
-        <div className="p-6 overflow-y-auto space-y-4 flex-1">
-          {/* Dropzone */}
-          <div
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
-            className={`border-2 border-dashed rounded-3xl p-6 text-center cursor-pointer transition-all ${
-              dragActive
-                ? 'border-slate-900 bg-slate-100'
-                : 'border-slate-300 hover:border-slate-900 hover:bg-slate-50'
-            }`}
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac"
-              multiple
-              className="hidden"
-              onChange={(e) => handleFiles(e.target.files)}
-            />
-            <div className="w-12 h-12 rounded-2xl bg-slate-100 border border-slate-200 mx-auto flex items-center justify-center mb-3 text-slate-700">
+        <button
+          onClick={() => setIsUploadOpen(false)}
+          className="p-2 rounded-full text-slate-400 hover:text-slate-900 hover:bg-slate-200/60 transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* Content Body */}
+      <div className="p-5 overflow-y-auto space-y-4 flex-1 pb-24">
+        {/* Dropzone */}
+        <div
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={handleDrop}
+          onClick={() => fileInputRef.current?.click()}
+          className={`border-2 border-dashed rounded-3xl p-6 text-center cursor-pointer transition-all ${
+            dragActive
+              ? 'border-slate-900 bg-slate-100'
+              : 'border-slate-300 hover:border-slate-900 hover:bg-slate-50'
+          }`}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac"
+            multiple
+            className="hidden"
+            onChange={(e) => handleFiles(e.target.files)}
+          />
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-800">
               <FileAudio className="w-6 h-6" />
             </div>
-            <p className="text-sm font-bold text-slate-900 mb-1">
-              Pilih file MP3 atau Tarik ke Sini
+            <p className="text-xs font-bold text-slate-900">
+              Klik untuk memilih atau seret file audio kemari
             </p>
-            <p className="text-xs text-slate-500 font-medium">
-              Mendukung MP3, M4A, FLAC, WAV, OGG (Bisa pilih banyak sekaligus)
+            <p className="text-[11px] text-slate-500">
+              Mendukung MP3, M4A, FLAC, WAV, AAC, OGG
             </p>
           </div>
+        </div>
 
-          {/* Progress text */}
-          {(isProcessing || isSaving) && (
-            <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-slate-100 border border-slate-200 text-slate-800 text-xs font-semibold">
-              <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
-              <span className="truncate">{progressText}</span>
+        {/* Progress Message */}
+        {(isProcessing || isSaving) && (
+          <div className="p-3.5 bg-slate-100 rounded-2xl flex items-center gap-3 text-xs font-semibold text-slate-800 animate-pulse">
+            <Loader2 className="w-4 h-4 animate-spin text-slate-900" />
+            <span>{progressText || 'Sedang memproses file audio...'}</span>
+          </div>
+        )}
+
+        {/* Staged File List */}
+        {parsedSongs.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+              <span>File Siap Disimpan ({parsedSongs.length})</span>
+              <button
+                onClick={() => {
+                  setSelectedFiles([]);
+                  setParsedSongs([]);
+                }}
+                className="text-rose-600 hover:underline"
+              >
+                Hapus Semua
+              </button>
             </div>
-          )}
 
-          {/* Preview Parsed Songs List */}
-          {parsedSongs.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-wider px-1">
-                <span>Siap Ditambahkan ({parsedSongs.length})</span>
-                <span>Total: {formatFileSize(parsedSongs.reduce((acc, s) => acc + s.fileSize, 0))}</span>
-              </div>
-
-              <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
-                {parsedSongs.map((song, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-50 border border-slate-200"
-                  >
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div className="w-9 h-9 rounded-xl bg-white border border-slate-200 overflow-hidden flex-shrink-0 flex items-center justify-center">
-                        {song.coverArt ? (
-                          <img src={song.coverArt} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <Music className="w-4 h-4 text-slate-400" />
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-bold text-slate-900 truncate">{song.title}</p>
-                        <p className="text-[11px] text-slate-500 truncate">{song.artist}</p>
-                      </div>
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {parsedSongs.map((song, idx) => (
+                <div
+                  key={idx}
+                  className="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between gap-3"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-slate-200 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                      {song.coverArt ? (
+                        <img src={song.coverArt} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <Music className="w-4 h-4 text-slate-500" />
+                      )}
                     </div>
-
-                    <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                      <span className="text-xs font-mono font-semibold text-slate-500">
-                        {formatTime(song.duration)}
-                      </span>
-                      <button
-                        onClick={() => removeParsedSong(idx)}
-                        className="p-1 text-slate-400 hover:text-rose-600 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                    <div className="min-w-0">
+                      <h4 className="text-xs font-bold truncate text-slate-900">{song.title}</h4>
+                      <p className="text-[11px] text-slate-500 truncate">
+                        {song.artist} • {formatTime(song.duration)} • {formatFileSize(song.fileSize)}
+                      </p>
                     </div>
                   </div>
-                ))}
-              </div>
+
+                  <button
+                    onClick={() => handleRemoveSong(idx)}
+                    className="p-2 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-slate-200/50"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
             </div>
-          )}
 
-          {/* Storage Information */}
-          <div className="flex items-center gap-2 p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-600 font-medium">
-            <HardDrive className="w-4 h-4 text-slate-700 flex-shrink-0" />
-            <span>
-              Penyimpanan Browser: <strong>{formatFileSize(storageInfo.usedBytes)}</strong> terpakai
-              (Bebas kuota server, privasi 100% aman di perangkatmu).
-            </span>
-          </div>
-        </div>
-
-        {/* Footer Actions */}
-        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between gap-3">
-          <button
-            onClick={() => {
-              setSelectedFiles([]);
-              setParsedSongs([]);
-              setIsUploadOpen(false);
-            }}
-            className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-white text-slate-700 text-sm font-semibold transition-colors"
-          >
-            Batal
-          </button>
-
-          <button
-            onClick={handleSaveToVault}
-            disabled={parsedSongs.length === 0 || isProcessing || isSaving}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold transition-all shadow-sm"
-          >
-            {isSaving ? (
-              <>
+            {/* Save Button */}
+            <button
+              onClick={handleSaveToVault}
+              disabled={isSaving || isProcessing}
+              className="w-full py-3.5 rounded-2xl bg-slate-900 hover:bg-black text-white text-xs font-bold shadow-xs flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+            >
+              {isSaving ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Menyimpan...
-              </>
-            ) : (
-              <>
+              ) : (
                 <CheckCircle2 className="w-4 h-4" />
-                Simpan {parsedSongs.length > 0 ? `(${parsedSongs.length})` : ''} ke Vault
-              </>
-            )}
-          </button>
-        </div>
+              )}
+              <span>Simpan {parsedSongs.length} Lagu ke Vault</span>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

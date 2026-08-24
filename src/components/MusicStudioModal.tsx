@@ -8,6 +8,7 @@ import {
   Edit3,
   Check,
   X,
+  ArrowLeft,
   Play,
   Pause,
   Cloud,
@@ -306,34 +307,40 @@ export default function MusicStudioModal() {
   );
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-in fade-in select-none">
-      <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl border border-slate-200/90 flex flex-col max-h-[92vh] overflow-hidden">
-        {/* Top Header */}
-        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-900 text-white rounded-t-3xl">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center">
-              <Database className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-base font-black tracking-tight flex items-center gap-2">
-                <span>Music Studio & Cloud Management</span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                  Supabase CDN
-                </span>
-              </h2>
-              <p className="text-xs text-slate-400 font-medium mt-0.5">
-                Kelola file audio streaming, upload batch, & edit metadata
-              </p>
-            </div>
-          </div>
-
+    <div className="fixed inset-0 z-50 bg-white text-slate-900 flex flex-col pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)] animate-in slide-in-from-right duration-200 select-none max-w-lg mx-auto border-x border-slate-100 shadow-2xl">
+      {/* Top Native Header */}
+      <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-900 text-white sticky top-0 z-10 flex-shrink-0">
+        <div className="flex items-center gap-3">
           <button
             onClick={() => setIsStudioOpen(false)}
-            className="p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 transition-colors"
+            className="p-2 -ml-2 rounded-full text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+            title="Kembali"
           >
-            <X className="w-5 h-5" />
+            <ArrowLeft className="w-5 h-5 stroke-[2.5]" />
           </button>
+          <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center">
+            <Database className="w-4 h-4" />
+          </div>
+          <div>
+            <h2 className="text-sm font-black tracking-tight flex items-center gap-1.5">
+              <span>Music Studio</span>
+              <span className="px-1.5 py-0.2 rounded-full text-[9px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                Cloud
+              </span>
+            </h2>
+            <p className="text-[10px] text-slate-400 font-medium truncate">
+              Upload, edit & kelola database Supabase
+            </p>
+          </div>
         </div>
+
+        <button
+          onClick={() => setIsStudioOpen(false)}
+          className="p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
 
         {/* Navigation Tabs */}
         <div className="flex border-b border-slate-100 bg-slate-50 px-5 pt-2 gap-2">
@@ -848,6 +855,5 @@ export default function MusicStudioModal() {
           </div>
         )}
       </div>
-    </div>
-  );
+    );
 }

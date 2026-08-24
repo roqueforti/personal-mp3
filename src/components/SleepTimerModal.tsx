@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useAudio } from '@/context/AudioContext';
-import { X, Moon, Clock, Check, StopCircle, Disc } from 'lucide-react';
+import { X, ArrowLeft, Moon, Clock, Check, StopCircle, Disc } from 'lucide-react';
 
 const TIMER_OPTIONS = [
   { label: '5 Menit', minutes: 5 },
@@ -25,106 +25,101 @@ export default function SleepTimerModal() {
   if (!isSleepTimerOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-      <div className="bg-white border border-slate-200 w-full max-w-md rounded-3xl overflow-hidden shadow-2xl flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-amber-100 border border-amber-200 flex items-center justify-center text-amber-600">
-              <Moon className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-slate-900 leading-tight">Sleep Timer</h3>
-              <p className="text-xs text-slate-500 font-medium">Audio berhenti otomatis saat kamu tidur</p>
-            </div>
-          </div>
-
+    <div className="fixed inset-0 z-50 bg-white text-slate-900 flex flex-col pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)] animate-in slide-in-from-right duration-200 select-none max-w-lg mx-auto border-x border-slate-100 shadow-2xl">
+      {/* Native Mobile Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50/90 backdrop-blur-md sticky top-0 z-10 flex-shrink-0">
+        <div className="flex items-center gap-3">
           <button
             onClick={() => setIsSleepTimerOpen(false)}
-            className="p-2 rounded-full text-slate-400 hover:text-slate-900 hover:bg-slate-200/60 transition-colors"
+            className="p-2 -ml-2 rounded-full text-slate-800 hover:bg-slate-200/50 transition-colors"
+            title="Kembali"
           >
-            <X className="w-5 h-5" />
+            <ArrowLeft className="w-5 h-5 stroke-[2.5]" />
           </button>
+          <div className="w-8 h-8 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center text-amber-600">
+            <Moon className="w-4 h-4" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-slate-900 leading-tight">Sleep Timer</h3>
+            <p className="text-[10px] text-slate-500 font-medium truncate">Audio berhenti otomatis saat tidur</p>
+          </div>
         </div>
 
-        {/* Content */}
-        <div className="p-6 space-y-4">
-          {/* Active Timer Banner */}
-          {sleepTimer.active ? (
-            <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Clock className="w-5 h-5 text-amber-600 animate-pulse" />
-                <div>
-                  <p className="text-xs font-bold text-amber-800">Sleep Timer Aktif</p>
-                  <p className="text-sm font-bold text-slate-900">
-                    {sleepTimer.endOfTrack
-                      ? 'Berhenti di akhir lagu ini'
-                      : `Sisa ~${sleepTimer.minutesRemaining} menit lagi`}
-                  </p>
-                </div>
+        <button
+          onClick={() => setIsSleepTimerOpen(false)}
+          className="p-2 rounded-full text-slate-400 hover:text-slate-900 hover:bg-slate-200/60 transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* Content */}
+      <div className="p-5 space-y-4 flex-1 overflow-y-auto pb-24">
+        {/* Active Timer Banner */}
+        {sleepTimer.active ? (
+          <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Clock className="w-5 h-5 text-amber-600 animate-pulse" />
+              <div>
+                <p className="text-xs font-bold text-amber-800">Sleep Timer Aktif</p>
+                <p className="text-sm font-bold text-slate-900">
+                  {sleepTimer.endOfTrack
+                    ? 'Berhenti di akhir lagu ini'
+                    : `Sisa ~${sleepTimer.minutesRemaining} menit lagi`}
+                </p>
               </div>
-
-              <button
-                onClick={cancelSleepTimer}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700 text-xs font-bold transition-colors"
-              >
-                <StopCircle className="w-4 h-4" />
-                Matikan
-              </button>
             </div>
-          ) : (
-            <p className="text-xs text-slate-500 font-medium">
-              Pilih berapa lama musik akan diputar sebelum berhenti otomatis dengan efek fade out:
-            </p>
-          )}
 
-          {/* Preset Buttons */}
-          <div className="space-y-2">
-            {TIMER_OPTIONS.map((opt) => (
-              <button
-                key={opt.minutes}
-                onClick={() => {
-                  startSleepTimer(opt.minutes);
-                  setIsSleepTimerOpen(false);
-                }}
-                className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 transition-all text-sm font-bold"
-              >
-                <span className="flex items-center gap-2.5">
-                  <Clock className="w-4 h-4 text-slate-500" />
-                  {opt.label}
-                </span>
-                {sleepTimer.active && !sleepTimer.endOfTrack && sleepTimer.totalMinutes === opt.minutes && (
-                  <Check className="w-4 h-4 text-slate-900" />
-                )}
-              </button>
-            ))}
-
-            {/* End of Current Track Option */}
             <button
-              onClick={() => {
-                startSleepTimer(0, true);
-                setIsSleepTimerOpen(false);
-              }}
-              className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 transition-all text-sm font-bold"
+              onClick={cancelSleepTimer}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700 text-xs font-bold transition-colors"
             >
-              <span className="flex items-center gap-2.5">
-                <Disc className="w-4 h-4 text-slate-700" />
-                Berhenti Setelah Lagu Ini Selesai
-              </span>
-              {sleepTimer.active && sleepTimer.endOfTrack && (
-                <Check className="w-4 h-4 text-slate-900" />
-              )}
+              <StopCircle className="w-4 h-4" />
+              Matikan
             </button>
           </div>
-        </div>
+        ) : (
+          <p className="text-xs text-slate-500 font-medium">
+            Pilih berapa lama musik akan diputar sebelum berhenti otomatis dengan efek fade out:
+          </p>
+        )}
 
-        {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+        {/* Preset Buttons */}
+        <div className="space-y-2.5">
+          {TIMER_OPTIONS.map((opt) => (
+            <button
+              key={opt.minutes}
+              onClick={() => {
+                startSleepTimer(opt.minutes);
+                setIsSleepTimerOpen(false);
+              }}
+              className="w-full flex items-center justify-between p-4 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 transition-all text-xs font-bold"
+            >
+              <span className="flex items-center gap-2.5">
+                <Clock className="w-4 h-4 text-slate-500" />
+                {opt.label}
+              </span>
+              {sleepTimer.active && !sleepTimer.endOfTrack && sleepTimer.totalMinutes === opt.minutes && (
+                <Check className="w-4 h-4 text-slate-900 stroke-[3]" />
+              )}
+            </button>
+          ))}
+
+          {/* End of Current Track Option */}
           <button
-            onClick={() => setIsSleepTimerOpen(false)}
-            className="px-5 py-2 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-white transition-colors"
+            onClick={() => {
+              startSleepTimer(0, true);
+              setIsSleepTimerOpen(false);
+            }}
+            className="w-full flex items-center justify-between p-4 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 transition-all text-xs font-bold"
           >
-            Tutup
+            <span className="flex items-center gap-2.5">
+              <Disc className="w-4 h-4 text-slate-700" />
+              Berhenti Setelah Lagu Ini Selesai
+            </span>
+            {sleepTimer.active && sleepTimer.endOfTrack && (
+              <Check className="w-4 h-4 text-slate-900 stroke-[3]" />
+            )}
           </button>
         </div>
       </div>
