@@ -468,6 +468,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const syncWithCloud = useCallback(async () => {
     if (!cloudApi.isCloudConfigured()) {
       setIsCloudConnected(false);
+      console.warn('Supabase not configured on this device yet.');
       return;
     }
 
@@ -475,8 +476,10 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     setIsCloudConnected(true);
 
     try {
-      // 1. Fetch cloud songs metadata
+      // 1. Fetch cloud songs metadata directly from Supabase
       const cloudSongs = await cloudApi.fetchCloudSongs();
+      console.log(`Fetched ${cloudSongs.length} songs from Supabase`);
+
       if (cloudSongs.length > 0) {
         const localSongs = await db.getAllSongs();
         const localMap = new Map(localSongs.map((s) => [s.id, s]));
@@ -496,6 +499,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         }
 
         await db.saveSongsBatch(songsToSave);
+        setSongs(songsToSave);
         await refreshSongs();
       }
 
@@ -508,7 +512,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         await refreshPlaylists();
       }
     } catch (err) {
-      console.error('Failed to sync with Google Apps Script cloud:', err);
+      console.error('Failed to sync with Supabase cloud:', err);
     } finally {
       setIsSyncing(false);
       updateStorageStats();
