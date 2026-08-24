@@ -342,42 +342,42 @@ export default function MusicStudioModal() {
         </button>
       </div>
 
-        {/* Navigation Tabs */}
-        <div className="flex border-b border-slate-100 bg-slate-50 px-5 pt-2 gap-2">
+        {/* Navigation Tabs (Fully Responsive Grid on Mobile) */}
+        <div className="grid grid-cols-3 border-b border-slate-100 bg-slate-50 px-2 pt-2 gap-1.5 flex-shrink-0">
           <button
             onClick={() => setActiveTab('upload')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-t-2xl text-xs font-bold transition-all ${
+            className={`flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-t-xl text-xs font-bold transition-all truncate ${
               activeTab === 'upload'
                 ? 'bg-white text-slate-900 border-t-2 border-slate-900 shadow-xs'
                 : 'text-slate-500 hover:text-slate-900'
             }`}
           >
-            <Upload className="w-4 h-4" />
-            <span>Upload Lagu ({stagedFiles.length})</span>
+            <Upload className="w-3.5 h-3.5 flex-shrink-0" />
+            <span className="truncate">Upload ({stagedFiles.length})</span>
           </button>
 
           <button
             onClick={() => setActiveTab('library')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-t-2xl text-xs font-bold transition-all ${
+            className={`flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-t-xl text-xs font-bold transition-all truncate ${
               activeTab === 'library'
                 ? 'bg-white text-slate-900 border-t-2 border-slate-900 shadow-xs'
                 : 'text-slate-500 hover:text-slate-900'
             }`}
           >
-            <Layers className="w-4 h-4" />
-            <span>Koleksi Cloud ({songs.length})</span>
+            <Layers className="w-3.5 h-3.5 flex-shrink-0" />
+            <span className="truncate">Koleksi ({songs.length})</span>
           </button>
 
           <button
             onClick={() => setActiveTab('config')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-t-2xl text-xs font-bold transition-all ml-auto ${
+            className={`flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-t-xl text-xs font-bold transition-all truncate ${
               activeTab === 'config'
                 ? 'bg-white text-slate-900 border-t-2 border-slate-900 shadow-xs'
                 : 'text-slate-500 hover:text-slate-900'
             }`}
           >
-            <Cloud className="w-4 h-4" />
-            <span>Setup Supabase</span>
+            <Cloud className="w-3.5 h-3.5 flex-shrink-0" />
+            <span className="truncate">Setup</span>
             {isConfigured && <span className="w-2 h-2 rounded-full bg-emerald-500" />}
           </button>
         </div>
@@ -766,7 +766,7 @@ export default function MusicStudioModal() {
                     )}
                   </button>
                 </div>
-                <pre className="p-3 bg-slate-900 text-slate-200 rounded-2xl text-[11px] font-mono overflow-x-auto max-h-44 border border-slate-800">
+                <pre className="p-3 bg-slate-900 text-slate-200 rounded-2xl text-[11px] font-mono overflow-x-auto max-h-44 border border-slate-800 scrollbar-none">
                   {supabase.SUPABASE_SQL_SETUP}
                 </pre>
               </div>

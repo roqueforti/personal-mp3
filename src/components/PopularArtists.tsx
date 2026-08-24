@@ -47,7 +47,7 @@ export default function PopularArtists({ onSelectArtist }: PopularArtistsProps) 
       </div>
 
       {/* Horizontal Scroll */}
-      <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-none -mx-4 px-4">
+      <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-none no-scrollbar w-full">
         {artistsMap.map((artist, idx) => {
           const gradient = GRADIENT_COLORS[idx % GRADIENT_COLORS.length];
           return (

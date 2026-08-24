@@ -87,25 +87,25 @@ export default function EqualizerModal() {
         </div>
 
         {/* 5-Band Sliders */}
-        <div className="bg-slate-50 p-5 rounded-3xl border border-slate-200">
-          <div className="flex justify-between items-center mb-4 px-2">
-            <span className="text-xs font-mono font-bold text-slate-500">+12 dB</span>
-            <span className="text-xs font-mono font-bold text-slate-400">0 dB</span>
-            <span className="text-xs font-mono font-bold text-slate-500">-12 dB</span>
+        <div className="bg-slate-50 p-4 rounded-3xl border border-slate-200 overflow-hidden">
+          <div className="flex justify-between items-center mb-3 px-1">
+            <span className="text-[11px] font-mono font-bold text-slate-500">+12 dB</span>
+            <span className="text-[11px] font-mono font-bold text-slate-400">0 dB</span>
+            <span className="text-[11px] font-mono font-bold text-slate-500">-12 dB</span>
           </div>
 
-          <div className="grid grid-cols-5 gap-2 sm:gap-4 items-center justify-items-center">
+          <div className="grid grid-cols-5 gap-1 items-center justify-items-center w-full">
             {EQUALIZER_FREQUENCIES.map((freq, idx) => {
               const gain = eqGains[idx] || 0;
               return (
-                <div key={freq} className="flex flex-col items-center gap-2 h-48">
+                <div key={freq} className="flex flex-col items-center gap-1.5 h-44 w-full max-w-[60px] overflow-hidden">
                   {/* Gain dB Indicator */}
-                  <span className="text-[11px] font-mono font-bold text-slate-900">
-                    {gain > 0 ? `+${gain}` : gain} dB
+                  <span className="text-[10px] font-mono font-bold text-slate-900">
+                    {gain > 0 ? `+${gain}` : gain}dB
                   </span>
 
                   {/* Vertical Slider Wrapper */}
-                  <div className="relative flex-1 flex items-center justify-center w-8">
+                  <div className="relative flex-1 flex items-center justify-center w-6 overflow-visible">
                     <input
                       type="range"
                       min="-12"
@@ -113,12 +113,12 @@ export default function EqualizerModal() {
                       step="1"
                       value={gain}
                       onChange={(e) => setEqGain(idx, parseFloat(e.target.value))}
-                      className="accent-slate-900 w-36 h-2 bg-slate-200 rounded-lg cursor-pointer transform -rotate-90 origin-center"
+                      className="accent-slate-900 w-28 h-2 bg-slate-200 rounded-lg cursor-pointer transform -rotate-90 origin-center"
                     />
                   </div>
 
                   {/* Frequency Label */}
-                  <span className="text-[10px] text-center font-bold text-slate-600 whitespace-pre-line leading-tight">
+                  <span className="text-[9px] text-center font-bold text-slate-600 whitespace-pre-line leading-tight truncate w-full">
                     {FREQ_LABELS[idx]}
                   </span>
                 </div>

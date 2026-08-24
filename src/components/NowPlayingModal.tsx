@@ -76,7 +76,7 @@ export default function NowPlayingModal() {
   const speedOptions = [0.75, 1.0, 1.25, 1.5, 2.0];
 
   return (
-    <div className="fixed inset-0 z-50 bg-white flex flex-col justify-between overflow-y-auto pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)] select-none text-slate-900 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 bg-white flex flex-col justify-between overflow-y-auto overflow-x-hidden pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)] select-none text-slate-900 animate-in fade-in duration-200 max-w-lg mx-auto border-x border-slate-100 shadow-2xl">
       {/* Top Header */}
       <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 bg-white">
         <button

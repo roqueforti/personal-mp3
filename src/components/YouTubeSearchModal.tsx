@@ -315,7 +315,7 @@ export default function YouTubeSearchModal() {
         </div>
 
         {/* Quick Trending Chips */}
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 text-xs">
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none no-scrollbar py-0.5 text-xs w-full">
           <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1 flex-shrink-0">
             <TrendingUp className="w-3 h-3 text-slate-400" />
             Tren:
