@@ -56,6 +56,7 @@ export default function MusicStudioModal() {
     isPlaying,
     togglePlay,
     syncFromCloud,
+    clearAllLocalSongs,
     isSyncing,
   } = useAudio();
 
@@ -546,9 +547,23 @@ export default function MusicStudioModal() {
                   onClick={syncFromCloud}
                   disabled={isSyncing}
                   className="px-3 py-2 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                  title="Sinkronisasi dengan Supabase"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
                   <span>Sync</span>
+                </button>
+                <button
+                  onClick={async () => {
+                    if (confirm('Hapus semua lagu lama dari memori HP lokal dan sinkronkan hanya dari Supabase?')) {
+                      await clearAllLocalSongs();
+                      await syncFromCloud();
+                    }
+                  }}
+                  className="px-3 py-2 rounded-2xl bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold flex items-center gap-1.5 transition-colors"
+                  title="Bersihkan semua cache lagu lama dari memori lokal"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Reset Cache</span>
                 </button>
               </div>
 

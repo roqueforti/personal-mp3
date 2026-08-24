@@ -77,6 +77,7 @@ interface AudioContextType {
   cycleRepeatMode: () => void;
   toggleFavorite: (songId: string) => Promise<void>;
   deleteSong: (songId: string) => Promise<void>;
+  clearAllLocalSongs: () => Promise<void>;
 
   // Sleep Timer
   sleepTimer: SleepTimerState;
@@ -784,6 +785,17 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     [currentSong]
   );
 
+  // Clear all local songs from IndexedDB
+  const clearAllLocalSongs = useCallback(async () => {
+    if (audioRef.current) audioRef.current.pause();
+    setCurrentSong(null);
+    setIsPlaying(false);
+    await db.clearAllSongs();
+    setSongs([]);
+    setQueue([]);
+    updateStorageStats();
+  }, []);
+
   // MediaSession Handlers
   useEffect(() => {
     MediaSessionController.getInstance().registerActionHandlers({
@@ -928,6 +940,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         cycleRepeatMode,
         toggleFavorite,
         deleteSong,
+        clearAllLocalSongs,
         sleepTimer,
         startSleepTimer,
         cancelSleepTimer,

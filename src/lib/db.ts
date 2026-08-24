@@ -143,6 +143,17 @@ export async function deletePlaylist(id: string): Promise<void> {
   await db.delete('playlists', id);
 }
 
+export async function clearAllSongs(): Promise<void> {
+  const db = await getDB();
+  await db.clear('songs');
+}
+
+export async function clearAllData(): Promise<void> {
+  const db = await getDB();
+  await db.clear('songs');
+  await db.clear('playlists');
+}
+
 // ----------------- Settings / Storage Stats ----------------- //
 
 export async function getSetting<T>(key: string, defaultValue: T): Promise<T> {

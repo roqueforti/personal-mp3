@@ -19,6 +19,7 @@ import {
   DownloadCloud,
   Download,
   Loader2,
+  Trash2,
 } from 'lucide-react';
 
 export default function CloudSettingsModal() {
@@ -29,6 +30,7 @@ export default function CloudSettingsModal() {
     syncWithCloud,
     refreshSongs,
     isSyncing,
+    clearAllLocalSongs,
     downloadAllSongsForOffline,
     isDownloadingAll,
     downloadProgress,
@@ -322,6 +324,30 @@ export default function CloudSettingsModal() {
               )}
             </div>
           )}
+
+          {/* Reset / Bersihkan Lagu Lama */}
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
+            <div>
+              <h4 className="text-xs font-bold text-slate-900">Bersihkan Semua Lagu Lama</h4>
+              <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                Hapus seluruh cache lagu lama dari memori HP lokal untuk mulai fresh dengan Supabase.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={async () => {
+                if (confirm('Hapus seluruh lagu lama dari memori HP lokal?')) {
+                  await clearAllLocalSongs();
+                  alert('Vault lokal berhasil dibersihkan!');
+                  setIsCloudModalOpen(false);
+                }
+              }}
+              className="px-3.5 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold flex items-center gap-1.5 transition-colors flex-shrink-0"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Bersihkan</span>
+            </button>
+          </div>
 
           {/* Instructions Accordion */}
           <div className="border border-slate-200 rounded-2xl overflow-hidden">
