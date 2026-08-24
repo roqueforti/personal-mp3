@@ -166,6 +166,31 @@ export default function BackgroundPlaybackModal() {
               </button>
             </div>
 
+            {/* Mode Layar Hitam (Simulasi Layar Mati / AMOLED Saver) */}
+            <div className="flex items-center justify-between gap-3 pt-2 border-t border-slate-200/60">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <Moon className="w-4 h-4 text-indigo-500" />
+                  <span className="text-xs font-bold text-slate-900">
+                    Mode Layar Hitam (Simulasi Layar Mati)
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Layar 100% hitam pekat (padam 0% baterai). Browser tetap wake, lagu tidak berhenti!
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  triggerHaptic(15);
+                  setIsBackgroundModalOpen(false);
+                  window.dispatchEvent(new CustomEvent('toggle-amoled-mode'));
+                }}
+                className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-white hover:bg-slate-800 active:scale-95 transition-all shadow-sm flex items-center gap-1 flex-shrink-0"
+              >
+                <span>Aktifkan</span>
+              </button>
+            </div>
+
             {/* Lock Screen Media Controls Status */}
             <div className="flex items-center justify-between gap-3 pt-2 border-t border-slate-200/60">
               <div className="min-w-0">

@@ -234,7 +234,19 @@ export default function NowPlayingModal() {
                     className="w-full px-3 py-2.5 rounded-xl text-left flex items-center gap-2.5 hover:bg-slate-100 text-slate-800 active:scale-95"
                   >
                     <Headphones className="w-4 h-4 text-indigo-500" />
-                    Putar Saat Layar Mati {isWakeLockActive ? '(Layar Aktif)' : ''}
+                    Pengaturan Layar Mati {isWakeLockActive ? '(Wake On)' : ''}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      triggerHaptic(15);
+                      setOptionsMenuOpen(false);
+                      window.dispatchEvent(new CustomEvent('toggle-amoled-mode'));
+                    }}
+                    className="w-full px-3 py-2.5 rounded-xl text-left flex items-center gap-2.5 hover:bg-slate-100 text-slate-800 active:scale-95"
+                  >
+                    <Moon className="w-4 h-4 text-slate-900" />
+                    Mode Layar Hitam (AMOLED Saver)
                   </button>
 
                   <button

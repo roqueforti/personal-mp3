@@ -25,6 +25,30 @@ export default function YouTubeAudioBridge() {
   const currentVideoIdRef = useRef<string | null>(null);
   const repeatModeRef = useRef(repeatMode);
   repeatModeRef.current = repeatMode;
+  const isPlayingRef = useRef(isPlaying);
+  isPlayingRef.current = isPlaying;
+
+  // Silent native HTML5 audio anchor to hold OS Background Audio Focus
+  const silentAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Silent 1-second WAV loop base64 to keep mobile OS audio pipeline alive
+    const silentWav =
+      'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+    const audio = new Audio(silentWav);
+    audio.loop = true;
+    audio.volume = 0.001;
+    audio.setAttribute('playsinline', 'true');
+    audio.setAttribute('webkit-playsinline', 'true');
+    silentAudioRef.current = audio;
+
+    return () => {
+      audio.pause();
+      silentAudioRef.current = null;
+    };
+  }, []);
 
   // Load YouTube IFrame API script reliably
   useEffect(() => {
@@ -93,6 +117,22 @@ export default function YouTubeAudioBridge() {
                   playNext();
                 }
               }
+              // 2: PAUSED (Auto-resume watchdog if paused unexpectedly while user wanted it playing)
+              else if (event.data === 2) {
+                if (isPlayingRef.current) {
+                  setTimeout(() => {
+                    if (
+                      playerRef.current &&
+                      isPlayingRef.current &&
+                      typeof playerRef.current.playVideo === 'function'
+                    ) {
+                      try {
+                        playerRef.current.playVideo();
+                      } catch {}
+                    }
+                  }, 150);
+                }
+              }
             },
             onError: (e: any) => {
               console.warn('YouTube Player Event Error:', e.data);
@@ -125,6 +165,31 @@ export default function YouTubeAudioBridge() {
     };
   }, []);
 
+  // Background Visibility Auto-Resume Watchdog
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleVisibilityChange = () => {
+      if (currentSong?.youtubeVideoId && isPlayingRef.current) {
+        if (silentAudioRef.current && silentAudioRef.current.paused) {
+          silentAudioRef.current.play().catch(() => {});
+        }
+        if (playerRef.current && typeof playerRef.current.playVideo === 'function') {
+          setTimeout(() => {
+            try {
+              playerRef.current.playVideo();
+            } catch {}
+          }, 100);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [currentSong?.youtubeVideoId]);
+
   // Handle currentSong changes (YouTube track vs Native track)
   useEffect(() => {
     const videoId = currentSong?.youtubeVideoId;
@@ -135,11 +200,19 @@ export default function YouTubeAudioBridge() {
           playerRef.current.pauseVideo();
         } catch {}
       }
+      if (silentAudioRef.current) {
+        silentAudioRef.current.pause();
+      }
       currentVideoIdRef.current = null;
       return;
     }
 
     currentVideoIdRef.current = videoId;
+
+    // Start silent audio anchor
+    if (silentAudioRef.current && isPlaying) {
+      silentAudioRef.current.play().catch(() => {});
+    }
 
     if (playerRef.current && isReadyRef.current) {
       try {
@@ -152,7 +225,7 @@ export default function YouTubeAudioBridge() {
         console.warn('YouTube load video note:', e);
       }
     }
-  }, [currentSong?.id, currentSong?.youtubeVideoId]);
+  }, [currentSong?.id, currentSong?.youtubeVideoId, isPlaying]);
 
   // Sync Play / Pause state
   useEffect(() => {
