@@ -18,6 +18,7 @@ import {
   Sparkles,
   Upload,
 } from 'lucide-react';
+import NativeConfirmModal from './NativeConfirmModal';
 
 export default function CloudSettingsModal() {
   const {
@@ -35,6 +36,7 @@ export default function CloudSettingsModal() {
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   const [testMessage, setTestMessage] = useState('');
   const [copiedSql, setCopiedSql] = useState(false);
+  const [confirmResetCache, setConfirmResetCache] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && isCloudModalOpen) {
@@ -236,12 +238,7 @@ export default function CloudSettingsModal() {
             </p>
           </div>
           <button
-            onClick={async () => {
-              if (confirm('Bersihkan seluruh cache lokal dan muat ulang dari Supabase?')) {
-                await clearAllLocalSongs();
-                await syncWithCloud();
-              }
-            }}
+            onClick={() => setConfirmResetCache(true)}
             className="px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold flex items-center gap-1.5 transition-colors border border-rose-200"
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -249,6 +246,22 @@ export default function CloudSettingsModal() {
           </button>
         </div>
       </div>
+
+      {/* Native Reset Cache Confirm Dialog */}
+      <NativeConfirmModal
+        isOpen={confirmResetCache}
+        title="Bersihkan Cache Lokal?"
+        message="Hapus semua data cache lokal dan unduh ulang daftar lagu dari Supabase?"
+        confirmText="Reset & Unduh Ulang"
+        cancelText="Batal"
+        isDestructive={true}
+        onConfirm={async () => {
+          setConfirmResetCache(false);
+          await clearAllLocalSongs();
+          await syncWithCloud();
+        }}
+        onCancel={() => setConfirmResetCache(false)}
+      />
     </div>
   );
 }

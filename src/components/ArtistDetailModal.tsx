@@ -31,6 +31,12 @@ export default function ArtistDetailModal({
 
   if (!artistName) return null;
 
+  const triggerHaptic = (ms = 10) => {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(ms);
+    }
+  };
+
   const artistSongs = songs.filter(
     (s) => s.artist.toLowerCase().trim() === artistName.toLowerCase().trim()
   );
@@ -40,28 +46,35 @@ export default function ArtistDetailModal({
 
   const handlePlayAll = () => {
     if (artistSongs.length > 0) {
+      triggerHaptic(15);
       playSong(artistSongs[0], artistSongs);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-white overflow-y-auto flex flex-col animate-slide-up pb-24">
-      {/* Top Navigation Bar */}
-      <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b border-slate-100">
+    <div className="fixed inset-0 z-50 bg-white overflow-y-auto flex flex-col animate-slide-up select-none pt-[env(safe-area-inset-top,0px)] pb-[calc(6rem+env(safe-area-inset-bottom,0px))] max-w-lg mx-auto border-x border-slate-100 shadow-2xl">
+      {/* Top Navigation Bar with Safe Area */}
+      <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b border-slate-100">
         <button
-          onClick={onClose}
-          className="p-2 rounded-full hover:bg-slate-100 text-slate-800 transition-colors"
+          onClick={() => {
+            triggerHaptic(5);
+            onClose();
+          }}
+          className="p-2 -ml-2 rounded-full hover:bg-slate-100 active:scale-90 text-slate-800 transition-all"
         >
           <ChevronLeft className="w-6 h-6 stroke-[2.5]" />
         </button>
 
-        <h2 className="text-sm font-extrabold text-slate-900 tracking-tight">Artist</h2>
+        <h2 className="text-sm font-extrabold text-slate-900 tracking-tight">Artist Profile</h2>
 
         <button
           onClick={() => {
-            if (topSong) onOpenSongAction(topSong);
+            if (topSong) {
+              triggerHaptic(5);
+              onOpenSongAction(topSong);
+            }
           }}
-          className="p-2 rounded-full hover:bg-slate-100 text-slate-800 transition-colors"
+          className="p-2 -mr-2 rounded-full hover:bg-slate-100 active:scale-90 text-slate-800 transition-all"
         >
           <MoreVertical className="w-5 h-5" />
         </button>
@@ -98,8 +111,11 @@ export default function ArtistDetailModal({
           {/* Action Buttons: FOLLOW & PLAY ALL */}
           <div className="flex items-center gap-3 pt-1">
             <button
-              onClick={() => setIsFollowing(!isFollowing)}
-              className={`px-5 py-1.5 rounded-full text-xs font-bold transition-all border ${
+              onClick={() => {
+                triggerHaptic(10);
+                setIsFollowing(!isFollowing);
+              }}
+              className={`px-5 py-1.5 rounded-full text-xs font-bold transition-all border active:scale-95 ${
                 isFollowing
                   ? 'bg-slate-900 text-white border-slate-900'
                   : 'bg-white text-slate-900 border-slate-300 hover:border-slate-900'
@@ -131,13 +147,16 @@ export default function ArtistDetailModal({
               return (
                 <div
                   key={song.id}
-                  onClick={() => playSong(song, artistSongs)}
-                  className={`flex items-center justify-between p-2.5 rounded-2xl cursor-pointer transition-all ${
+                  onClick={() => {
+                    triggerHaptic(10);
+                    playSong(song, artistSongs);
+                  }}
+                  className={`flex items-center justify-between p-2.5 rounded-2xl cursor-pointer transition-all active:scale-[0.98] ${
                     isCur ? 'bg-slate-100' : 'hover:bg-slate-50'
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div className="w-10 h-10 rounded-xl bg-slate-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-xl bg-slate-100 overflow-hidden flex-shrink-0 flex items-center justify-center border border-slate-200">
                       {song.coverArt ? (
                         <img src={song.coverArt} alt="" className="w-full h-full object-cover" />
                       ) : (
@@ -148,7 +167,7 @@ export default function ArtistDetailModal({
                       <p className={`text-xs font-bold truncate ${isCur ? 'text-slate-900' : 'text-slate-800'}`}>
                         {song.title}
                       </p>
-                      <p className="text-[11px] text-slate-400 truncate mt-0.5">{song.album}</p>
+                      <p className="text-[11px] text-slate-400 truncate mt-0.5">{song.album || 'Single'}</p>
                     </div>
                   </div>
 
@@ -159,9 +178,10 @@ export default function ArtistDetailModal({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
+                        triggerHaptic(5);
                         onOpenSongAction(song);
                       }}
-                      className="p-1.5 text-slate-400 hover:text-slate-900 rounded-full"
+                      className="p-1.5 text-slate-400 hover:text-slate-900 active:scale-90 rounded-full"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </button>
@@ -180,7 +200,7 @@ export default function ArtistDetailModal({
               {uniqueAlbums.map((albumName) => (
                 <div
                   key={albumName}
-                  className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 cursor-pointer hover:bg-slate-100 transition-colors"
+                  className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 cursor-pointer hover:bg-slate-100 active:scale-[0.98] transition-all"
                 >
                   <div className="aspect-square rounded-xl bg-slate-200 overflow-hidden flex items-center justify-center">
                     {topSong?.coverArt ? (

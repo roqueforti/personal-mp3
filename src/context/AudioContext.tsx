@@ -94,8 +94,6 @@ interface AudioContextType {
   // Modals & Sheets
   isFullPlayerOpen: boolean;
   setIsFullPlayerOpen: (open: boolean) => void;
-  isUploadOpen: boolean;
-  setIsUploadOpen: (open: boolean) => void;
   isPlaylistModalOpen: boolean;
   setIsPlaylistModalOpen: (open: boolean) => void;
   isEqualizerOpen: boolean;
@@ -155,7 +153,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
   // Modals
   const [isFullPlayerOpen, setIsFullPlayerOpen] = useState<boolean>(false);
-  const [isUploadOpen, setIsUploadOpen] = useState<boolean>(false);
   const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState<boolean>(false);
   const [isEqualizerOpen, setIsEqualizerOpen] = useState<boolean>(false);
   const [isSleepTimerOpen, setIsSleepTimerOpen] = useState<boolean>(false);
@@ -1014,8 +1011,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         analyserNode: analyserNodeRef.current,
         isFullPlayerOpen,
         setIsFullPlayerOpen,
-        isUploadOpen,
-        setIsUploadOpen,
         isPlaylistModalOpen,
         setIsPlaylistModalOpen,
         isEqualizerOpen,

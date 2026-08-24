@@ -4,65 +4,42 @@ import React, { useState } from 'react';
 import { useAudio } from '@/context/AudioContext';
 import {
   Search,
-  Upload,
   Sliders,
   Moon,
-  Music2,
-  Heart,
-  HardDrive,
   Cloud,
   Database,
-  Youtube,
   X,
 } from 'lucide-react';
-import { formatFileSize } from '@/lib/formatters';
 
 export default function Navbar() {
   const {
-    songs,
     searchQuery,
     setSearchQuery,
-    setIsUploadOpen,
     setIsEqualizerOpen,
     setIsSleepTimerOpen,
     setIsCloudModalOpen,
-    setIsStudioOpen,
-    setIsYouTubeSearchOpen,
     isCloudConnected,
     isSyncing,
     sleepTimer,
-    storageInfo,
   } = useAudio();
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
+  const triggerHaptic = (ms = 10) => {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(ms);
+    }
+  };
+
   return (
-    <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-100/80 pt-[env(safe-area-inset-top,0px)]">
-      <div className="max-w-md mx-auto px-4 py-2">
+    <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-100/80 pt-[env(safe-area-inset-top,0px)] select-none">
+      <div className="max-w-md mx-auto px-4 py-2.5">
         {/* Top Native Header Row */}
         <div className="flex items-center justify-between gap-3 h-10">
-          {/* Left Action: Search Icon & YouTube Search */}
-          <div className="flex items-center gap-1 -ml-2">
-            <button
-              onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className="p-2 rounded-full text-slate-800 hover:bg-slate-100 transition-colors"
-              title="Cari Lagu Lokal"
-            >
-              <Search className="w-5 h-5 stroke-[2.5]" />
-            </button>
-            <button
-              onClick={() => setIsYouTubeSearchOpen(true)}
-              className="p-2 rounded-full text-red-600 hover:bg-red-50 transition-colors"
-              title="Cari Musik Online via YouTube"
-            >
-              <Youtube className="w-5 h-5" />
-            </button>
-          </div>
-
-          {/* Center Title: MY MUSIC with matching logo */}
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-xl bg-slate-900 flex items-center justify-center text-white shadow-2xs flex-shrink-0">
-              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-white">
+          {/* Brand Logo & Name */}
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-slate-900 flex items-center justify-center text-white shadow-xs flex-shrink-0">
+              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white">
                 <circle cx="8" cy="17" r="3" />
                 <circle cx="16" cy="14" r="3" />
                 <rect x="10" y="5" width="2" height="12" />
@@ -70,39 +47,57 @@ export default function Navbar() {
                 <path d="M10 7 L19 4 L19 7 L10 10 Z" />
               </svg>
             </div>
-            <h1 className="text-sm font-black tracking-wider text-slate-900 uppercase">
-              My Music
-            </h1>
+            <div>
+              <h1 className="text-sm font-black tracking-tight text-slate-900">
+                SonicVault
+              </h1>
+              <p className="text-[9px] font-bold text-slate-400 -mt-0.5 tracking-wider uppercase">
+                Offline Music
+              </p>
+            </div>
           </div>
 
-          {/* Right Actions: Studio, Cloud & EQ */}
-          <div className="flex items-center gap-1 -mr-2">
-            {/* Music Studio / Cloud Upload */}
+          {/* Right Actions: Quick Search, Sleep Timer, Cloud Sync & EQ */}
+          <div className="flex items-center gap-1 -mr-1.5">
+            {/* Quick In-List Search Toggle */}
             <button
-              onClick={() => setIsStudioOpen(true)}
-              title="Music Studio (Upload & Kelola Supabase)"
-              className="p-2 rounded-full text-slate-700 hover:bg-slate-100 transition-colors"
+              onClick={() => {
+                triggerHaptic(5);
+                setIsSearchOpen(!isSearchOpen);
+              }}
+              className={`p-2 rounded-full transition-all active:scale-90 ${
+                isSearchOpen ? 'bg-slate-100 text-slate-900' : 'text-slate-700 hover:bg-slate-100'
+              }`}
+              title="Cari Lagu Cepat"
             >
-              <Database className="w-5 h-5" />
+              <Search className="w-4 h-4 stroke-[2.5]" />
             </button>
 
-            {/* Sleep Timer */}
+            {/* Sleep Timer Indicator Pill */}
             {sleepTimer.active && (
               <button
-                onClick={() => setIsSleepTimerOpen(true)}
-                className="p-2 rounded-full text-amber-600 bg-amber-50"
+                onClick={() => {
+                  triggerHaptic(5);
+                  setIsSleepTimerOpen(true);
+                }}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full text-amber-700 bg-amber-50 border border-amber-200 text-xs font-bold active:scale-90 transition-transform"
+                title="Sleep Timer Aktif"
               >
-                <Moon className="w-4 h-4" />
+                <Moon className="w-3.5 h-3.5" />
+                <span>{sleepTimer.minutesRemaining}m</span>
               </button>
             )}
 
-            {/* Cloud Sync Icon */}
+            {/* Cloud Sync Status */}
             <button
-              onClick={() => setIsCloudModalOpen(true)}
+              onClick={() => {
+                triggerHaptic(5);
+                setIsCloudModalOpen(true);
+              }}
               title={isCloudConnected ? 'Cloud Sync Terhubung' : 'Hubungkan Cloud'}
-              className="relative p-2 rounded-full text-slate-700 hover:bg-slate-100 transition-colors"
+              className="relative p-2 rounded-full text-slate-700 hover:bg-slate-100 active:scale-90 transition-transform"
             >
-              <Cloud className={`w-5 h-5 ${isSyncing ? 'animate-bounce text-indigo-600' : ''}`} />
+              <Cloud className={`w-4 h-4 ${isSyncing ? 'animate-bounce text-indigo-600' : ''}`} />
               {isCloudConnected && (
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-500 border border-white" />
               )}
@@ -110,16 +105,19 @@ export default function Navbar() {
 
             {/* Equalizer */}
             <button
-              onClick={() => setIsEqualizerOpen(true)}
-              title="Equalizer"
-              className="p-2 rounded-full text-slate-700 hover:bg-slate-100 transition-colors"
+              onClick={() => {
+                triggerHaptic(5);
+                setIsEqualizerOpen(true);
+              }}
+              title="5-Band Equalizer"
+              className="p-2 rounded-full text-slate-700 hover:bg-slate-100 active:scale-90 transition-transform"
             >
-              <Sliders className="w-5 h-5" />
+              <Sliders className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        {/* Expandable Search Input Bar */}
+        {/* Expandable Quick Search Input Bar */}
         {isSearchOpen && (
           <div className="pt-2 pb-1 animate-fade-in">
             <div className="relative flex items-center">
@@ -135,7 +133,7 @@ export default function Navbar() {
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 p-1 text-slate-400 hover:text-slate-700"
+                  className="absolute right-2.5 p-1 text-slate-400 hover:text-slate-700 active:scale-90"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>

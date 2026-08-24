@@ -30,6 +30,7 @@ import { useAudio } from '@/context/AudioContext';
 import { Song } from '@/types/music';
 import * as supabase from '@/lib/supabase';
 import { formatFileSize, formatTime } from '@/lib/formatters';
+import NativeConfirmModal from './NativeConfirmModal';
 
 interface StagedUpload {
   id: string;
@@ -79,6 +80,8 @@ export default function MusicStudioModal() {
   const [editingSong, setEditingSong] = useState<Song | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [deletingSongId, setDeletingSongId] = useState<string | null>(null);
+  const [confirmDeleteCloudSong, setConfirmDeleteCloudSong] = useState<Song | null>(null);
+  const [confirmResetCache, setConfirmResetCache] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -276,12 +279,11 @@ export default function MusicStudioModal() {
   };
 
   const handleDeleteCloudSong = async (song: Song) => {
-    if (!confirm(`Hapus lagu "${song.title}" dari Supabase Storage & Database?`)) return;
-
     setDeletingSongId(song.id);
     await supabase.deleteSongFromSupabase(song);
     setSongs((prev) => prev.filter((s) => s.id !== song.id));
     setDeletingSongId(null);
+    setConfirmDeleteCloudSong(null);
   };
 
   const handleSaveSongEdit = async () => {
@@ -560,12 +562,7 @@ export default function MusicStudioModal() {
                   <span>Sync</span>
                 </button>
                 <button
-                  onClick={async () => {
-                    if (confirm('Hapus semua lagu lama dari memori HP lokal dan sinkronkan hanya dari Supabase?')) {
-                      await clearAllLocalSongs();
-                      await syncFromCloud();
-                    }
-                  }}
+                  onClick={() => setConfirmResetCache(true)}
                   className="px-3 py-2 rounded-2xl bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold flex items-center gap-1.5 transition-colors"
                   title="Bersihkan semua cache lagu lama dari memori lokal"
                 >
@@ -632,7 +629,7 @@ export default function MusicStudioModal() {
 
                         {/* Delete */}
                         <button
-                          onClick={() => handleDeleteCloudSong(song)}
+                          onClick={() => setConfirmDeleteCloudSong(song)}
                           disabled={deletingSongId === song.id}
                           className="p-2 rounded-xl bg-slate-100 hover:bg-red-50 hover:text-red-600 text-slate-400 transition-colors"
                           title="Hapus dari Cloud"
@@ -854,6 +851,36 @@ export default function MusicStudioModal() {
             </div>
           </div>
         )}
+
+        {/* Native Delete Cloud Song Confirm Dialog */}
+        <NativeConfirmModal
+          isOpen={Boolean(confirmDeleteCloudSong)}
+          title="Hapus dari Supabase?"
+          message={`Lagu "${confirmDeleteCloudSong?.title}" akan dihapus permanen dari Supabase Storage dan Database.`}
+          confirmText="Hapus Permanen"
+          cancelText="Batal"
+          isDestructive={true}
+          onConfirm={() => {
+            if (confirmDeleteCloudSong) handleDeleteCloudSong(confirmDeleteCloudSong);
+          }}
+          onCancel={() => setConfirmDeleteCloudSong(null)}
+        />
+
+        {/* Native Reset Cache Confirm Dialog */}
+        <NativeConfirmModal
+          isOpen={confirmResetCache}
+          title="Reset Cache Lokal?"
+          message="Hapus semua lagu lama dari memori HP lokal dan sinkronkan ulang database dari Supabase?"
+          confirmText="Reset & Sinkronkan"
+          cancelText="Batal"
+          isDestructive={true}
+          onConfirm={async () => {
+            setConfirmResetCache(false);
+            await clearAllLocalSongs();
+            await syncFromCloud();
+          }}
+          onCancel={() => setConfirmResetCache(false)}
+        />
       </div>
     );
 }
