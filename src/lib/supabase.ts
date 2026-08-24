@@ -72,6 +72,7 @@ create table if not exists public.songs (
   album text default 'SonicVault',
   duration float8 default 0,
   file_size bigint default 0,
+  mime_type text default 'audio/mpeg',
   stream_url text not null,
   cover_art text default '',
   lyrics text default '',
@@ -92,13 +93,23 @@ create table if not exists public.playlists (
 alter table public.songs enable row level security;
 alter table public.playlists enable row level security;
 
--- Policy untuk songs
+-- Drop existing policies if any to prevent duplicate errors
+drop policy if exists "Allow public read songs" on public.songs;
+drop policy if exists "Allow public insert songs" on public.songs;
+drop policy if exists "Allow public update songs" on public.songs;
+drop policy if exists "Allow public delete songs" on public.songs;
+
 create policy "Allow public read songs" on public.songs for select using (true);
 create policy "Allow public insert songs" on public.songs for insert with check (true);
 create policy "Allow public update songs" on public.songs for update using (true);
 create policy "Allow public delete songs" on public.songs for delete using (true);
 
--- Policy untuk playlists
+-- Drop existing playlist policies if any
+drop policy if exists "Allow public read playlists" on public.playlists;
+drop policy if exists "Allow public insert playlists" on public.playlists;
+drop policy if exists "Allow public update playlists" on public.playlists;
+drop policy if exists "Allow public delete playlists" on public.playlists;
+
 create policy "Allow public read playlists" on public.playlists for select using (true);
 create policy "Allow public insert playlists" on public.playlists for insert with check (true);
 create policy "Allow public update playlists" on public.playlists for update using (true);
@@ -109,7 +120,12 @@ insert into storage.buckets (id, name, public)
 values ('songs', 'songs', true)
 on conflict (id) do update set public = true;
 
--- Policy Storage Bucket songs agar bisa diakses & diupload
+-- Policy Storage Bucket songs
+drop policy if exists "Public Access Storage" on storage.objects;
+drop policy if exists "Public Insert Storage" on storage.objects;
+drop policy if exists "Public Update Storage" on storage.objects;
+drop policy if exists "Public Delete Storage" on storage.objects;
+
 create policy "Public Access Storage" on storage.objects for select using (bucket_id = 'songs');
 create policy "Public Insert Storage" on storage.objects for insert with check (bucket_id = 'songs');
 create policy "Public Update Storage" on storage.objects for update using (bucket_id = 'songs');
