@@ -1,21 +1,30 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { Song, Playlist } from '@/types/music';
 
+export const DEFAULT_SUPABASE_URL = 'https://zsgoergtarrthimzmler.supabase.co';
+export const DEFAULT_SUPABASE_KEY = 'sb_publishable_7oRakaQ40-gzBb34yVtv7w_CFZINjQp';
+
 const SUPABASE_URL_KEY = 'sonicvault_supabase_url';
 const SUPABASE_ANON_KEY = 'sonicvault_supabase_anon_key';
 
 export function getSupabaseUrl(): string {
-  if (typeof window === 'undefined') return process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-  const stored = localStorage.getItem(SUPABASE_URL_KEY);
-  if (stored && stored.trim()) return stored.trim();
-  return process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  if (typeof window !== 'undefined') {
+    const stored = localStorage.getItem(SUPABASE_URL_KEY);
+    if (stored && stored.trim()) return stored.trim();
+  }
+  return process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_SUPABASE_URL;
 }
 
 export function getSupabaseAnonKey(): string {
-  if (typeof window === 'undefined') return process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-  const stored = localStorage.getItem(SUPABASE_ANON_KEY);
-  if (stored && stored.trim()) return stored.trim();
-  return process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+  if (typeof window !== 'undefined') {
+    const stored = localStorage.getItem(SUPABASE_ANON_KEY);
+    if (stored && stored.trim()) return stored.trim();
+  }
+  return (
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+    DEFAULT_SUPABASE_KEY
+  );
 }
 
 export function setSupabaseConfig(url: string, anonKey: string): void {
@@ -28,7 +37,7 @@ export function setSupabaseConfig(url: string, anonKey: string): void {
 export function isSupabaseConfigured(): boolean {
   const url = getSupabaseUrl();
   const key = getSupabaseAnonKey();
-  return Boolean(url && url.startsWith('http') && key && key.length > 20);
+  return Boolean(url && url.startsWith('http') && key && key.length > 10);
 }
 
 let cachedClient: SupabaseClient | null = null;
